@@ -1,0 +1,191 @@
+export const en = {
+  common: {
+    continue: "Continue",
+    cancel: "Cancel",
+    save: "Save",
+    back: "Back",
+    next: "Next",
+    close: "Close",
+    tryAgain: "Try again",
+    search: "Search",
+    loading: "Loading...",
+    error: "Something went wrong.",
+    required: "Required field.",
+    invalid: "Invalid input.",
+    viewDetails: "View details",
+    change: "Change"
+  },
+  navigation: {
+    home: "Home",
+    map: "Map",
+    chat: "Chat",
+    appointments: "Appointments",
+    schedule: "Schedule",
+    profile: "Profile",
+    dashboard: "Dashboard",
+    patients: "Patients",
+    organization: "Organization",
+    receptionist: "Receptionist",
+    medicines: "Medicines",
+    feedback: "Feedback",
+    reviews: "Reviews",
+    services: "Services",
+    doctors: "Doctors",
+    settings: "Settings",
+    scanner: "Scanner"
+  },
+  chat: {
+    title: "Medireach AI Assistant",
+    placeholder: "Describe your symptoms...",
+    welcome: "Hi! Tell me what you're experiencing, and I'll help you find the right healthcare option.",
+    emptyState: "How can Medireach help you today?",
+    voiceListening: "Listening...",
+    voiceUnsupported: "Voice input isn't supported in this browser.",
+    voiceDenied: "Microphone permission is required for voice input.",
+    voiceError: "We couldn't hear that. Please try again.",
+    voiceStart: "Start voice input",
+    disclaimer: "Medireach provides healthcare assistance and does not replace professional medical advice.",
+    prompts: {
+      fever: "I have a fever",
+      headache: "I have a headache",
+      needDoctor: "I need a doctor",
+      findHospital: "Find nearby hospitals",
+      viewAppointments: "View my appointments"
+    },
+    actions: {
+      findDoctor: "Find a nearby doctor"
+    }
+  },
+  dashboard: {
+    nextAppointment: "Next appointment",
+    todayAppointment: "Today's appointment",
+    medicine: "Medicine",
+    quickActions: "Quick actions",
+    findHospital: "Find hospital",
+    bookAppointment: "Book appointment",
+    telemedicine: "Telemedicine",
+    viewHistory: "View history"
+  },
+  map: {
+    searchLocation: "Search location",
+    nearbyHospitals: "Nearby hospitals",
+    nearbyClinics: "Nearby clinics",
+    findHealthcare: "Find healthcare",
+    availabilityLegend: "Availability",
+    available: "Available",
+    limitedSlots: "Limited slots",
+    fullyBooked: "Fully booked",
+    directions: "Directions",
+    bookAppointment: "Book appointment"
+  },
+  appointment: {
+    book: "Book appointment",
+    selectDoctor: "Select doctor",
+    selectDate: "Select date",
+    selectTime: "Select time",
+    type: "Appointment type",
+    physical: "Physical",
+    online: "Online consultation",
+    confirm: "Confirm appointment",
+    status: {
+      pending: "Pending",
+      accepted: "Accepted",
+      confirmed: "Confirmed",
+      rejected: "Rejected",
+      cancelled: "Cancelled",
+      completed: "Completed"
+    }
+  },
+  reviews: {
+    patientFeedback: "Patient feedback",
+    averageRating: "Average rating",
+    verifiedReviews: "Verified reviews",
+    recentFeedback: "Recent feedback",
+    leaveReview: "Leave a review",
+    submitReview: "Submit review",
+    verifiedAppointment: "Verified appointment"
+  },
+  profile: {
+    language: "Language",
+    preferredLanguage: "Preferred language",
+    editProfile: "Edit Profile"
+  },
+  telemedicine: {
+    joinConsultation: "Join consultation",
+    waitingForDoctor: "Waiting for doctor",
+    microphone: "Microphone",
+    camera: "Camera",
+    endCall: "End call",
+    connectionStatus: "Connection status"
+  },
+  allergy: {
+    passport: "Allergy Passport",
+    title: "Allergies",
+    subtitle: "Keep important allergy information available for your healthcare visits.",
+    safetyBanner: "Your allergy information helps healthcare providers understand your medical history.",
+    noAllergies: "No allergies added yet",
+    noAllergiesDesc: "Adding known allergies can help you communicate important health information during appointments.",
+    addAllergy: "Add allergy",
+    editAllergy: "Edit allergy",
+    selectAllergy: "Select allergy",
+    whatHappened: "What happened?",
+    save: "Save allergy",
+    cancel: "Cancel",
+    remove: "Remove allergy",
+    removeConfirmTitle: "Remove this allergy?",
+    removeConfirmDesc: "This information will no longer appear in your Medireach profile.",
+    category: "Category",
+    reaction: "Reaction",
+    dateAdded: "Added",
+    customAllergy: "Enter allergy name",
+    searchPlaceholder: "Search allergies...",
+    noMatching: "No matching allergies",
+    addCustom: "Add custom allergy",
+    reactionPlaceholder: "Describe what happened when you were exposed...",
+    addedToast: "Allergy added",
+    updatedToast: "Allergy updated",
+    removedToast: "Allergy removed",
+    notProvided: "Allergy information not provided.",
+    categories: {
+      Medication: "Medication",
+      Food: "Food",
+      Environmental: "Environmental",
+      Other: "Other"
+    }
+  },
+  booking: {
+    bookAppointment: "Book an appointment",
+    doctor: "Doctor",
+    date: "Date",
+    time: "Time",
+    available: "Available",
+    booked: "Booked",
+    full: "Full",
+    physicalConsultation: "Physical consultation",
+    onlineConsultation: "Online consultation",
+    confirmAppointment: "Confirm appointment",
+    requestAppointment: "Request appointment",
+    pendingApproval: "Pending approval",
+    confirmed: "Confirmed",
+    cancelled: "Cancelled",
+    rejected: "Rejected",
+    completed: "Completed"
+  },
+  provider: {
+    dashboard: "Dashboard",
+    appointments: "Appointments",
+    patients: "Patients",
+    schedule: "Schedule",
+    pendingRequests: "Pending Requests",
+    acceptRequest: "Accept",
+    rejectRequest: "Reject",
+    cancelAppointment: "Cancel Appointment",
+    markCompleted: "Mark as Completed",
+    checkedIn: "Checked In",
+    checkIn: "Check In",
+    startConsultation: "Start Consultation",
+    joinConsultation: "Join Consultation"
+  }
+}
+
+export type TranslationType = typeof en
