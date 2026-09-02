@@ -30,6 +30,8 @@ router.get("/", authenticateJWT, async (req: AuthRequest, res: Response): Promis
       } else {
         filter.patientId = patientId
       }
+    } else {
+      filter.patientUserId = user._id
     }
 
     const allergies = await Allergy.find(filter).sort({ createdAt: -1 }).lean()

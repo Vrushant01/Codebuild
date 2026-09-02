@@ -79,7 +79,7 @@ export function PatientAllergyPanel({ patientId, isAuthorized, allergies: initia
                 <ShieldAlert className="w-4 h-4 text-red-500" />
                 <h4 className="font-bold">{alg.name}</h4>
                 <span className="text-[10px] uppercase bg-muted text-muted-foreground px-2 py-0.5 rounded font-bold tracking-wider">
-                  {t(`allergy.categories.${alg.category}`) || alg.category}
+                  {alg.category || "Medication"}
                 </span>
               </div>
               <div className="text-sm text-foreground/80 font-medium pl-6">

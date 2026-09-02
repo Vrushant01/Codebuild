@@ -60,15 +60,9 @@ export default function DoctorAppointmentDetailPage() {
       const appointment = await doctorService.getAppointmentById(id)
       if (appointment) {
         setApt(appointment)
-        const patientTarget = appointment.patientProfile?.id || appointment.patientProfile?.patientId || appointment.id
-        const [a, t, m] = await Promise.all([
-           profileService.getAllergies(), 
-           profileService.getHistoryTimeline(),
-           scheduleService.getMedicines(patientTarget)
-        ])
-        setAllergies(a)
-        setTimeline(t)
-        setMedicines(m)
+        setAllergies(appointment.allergies || [])
+        setTimeline(appointment.medicalHistory || [])
+        setMedicines(appointment.medicines || [])
       }
       setLoading(false)
     }
@@ -80,9 +74,9 @@ export default function DoctorAppointmentDetailPage() {
     const a = await doctorService.getAppointmentById(id)
     if (a) {
       setApt(a)
-      const patientTarget = a.patientProfile?.id || a.patientProfile?.patientId || id
-      const m = await scheduleService.getMedicines(patientTarget)
-      setMedicines(m)
+      setAllergies(a.allergies || [])
+      setTimeline(a.medicalHistory || [])
+      setMedicines(a.medicines || [])
     }
   }
 

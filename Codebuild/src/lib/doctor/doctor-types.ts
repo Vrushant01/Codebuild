@@ -9,10 +9,15 @@ export interface DoctorStats {
   upcomingCount: number
 }
 
+import type { Medicine } from "../schedule/schedule-types"
+
 // Extending Appointment for Doctor View
 export interface DoctorAppointment extends Appointment {
   patientProfile: PatientProfile
   currentCase?: MedicalCase
+  allergies?: Allergy[]
+  medicines?: Medicine[]
+  medicalHistory?: HistoryTimelineItem[]
 }
 
 export interface DoctorPatient {

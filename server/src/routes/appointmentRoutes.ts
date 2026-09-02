@@ -4,6 +4,8 @@ import { Doctor } from "../models/Doctor.js"
 import { Organization } from "../models/Organization.js"
 import { Patient } from "../models/Patient.js"
 import { User } from "../models/User.js"
+import { Allergy } from "../models/Allergy.js"
+import { MedicineSchedule } from "../models/MedicineSchedule.js"
 import { Notification } from "../models/Notification.js"
 import { authenticateJWT, AuthRequest } from "../middleware/auth.js"
 import { emitToUser } from "../services/socketService.js"
@@ -95,6 +97,7 @@ router.get("/:id", authenticateJWT, async (req: AuthRequest, res: Response): Pro
       .populate("doctorId")
       .populate("organizationId")
       .populate("patientUserId")
+      .populate("patientId")
       .lean()
 
     if (!apt) {
@@ -102,15 +105,100 @@ router.get("/:id", authenticateJWT, async (req: AuthRequest, res: Response): Pro
       return
     }
 
+    const patientUserId = (apt.patientUserId as any)?._id || apt.patientUserId
+    const patientProfileId = (apt.patientId as any)?._id || apt.patientId
+
+    // 1. Fetch patient-specific allergies
+    const allergies = await Allergy.find({
+      $or: [
+        { patientUserId: patientUserId },
+        { patientId: patientProfileId }
+      ].filter(Boolean) as any
+    }).sort({ createdAt: -1 }).lean()
+
+    // 2. Fetch patient-specific medical history (past completed or other appointments)
+    const pastAppointments = await Appointment.find({
+      patientUserId: patientUserId,
+      _id: { $ne: apt._id }
+    })
+      .sort({ date: -1 })
+      .populate("doctorId", "name specialization")
+      .lean()
+
+    // 3. Fetch patient-specific medicines
+    const medicines = await MedicineSchedule.find({
+      patientUserId: patientUserId
+    }).lean()
+
+    // 4. Construct current case
+    const currentCase = (apt.symptoms && apt.symptoms.length > 0) || apt.notes ? {
+      id: `case_${apt._id}`,
+      title: Array.isArray(apt.symptoms) && apt.symptoms.length > 0 ? apt.symptoms.join(", ") : "Consultation Assessment",
+      symptoms: Array.isArray(apt.symptoms) ? apt.symptoms : (apt.symptoms ? [apt.symptoms] : []),
+      startDate: apt.date,
+      status: "Active",
+      doctorName: (apt.doctorId as any)?.name || "Attending Doctor",
+      notes: apt.notes || ""
+    } : undefined
+
+    const pUser = apt.patientUserId as any
+    const pName = apt.patientName || pUser?.name || "Patient"
+    const pIdentifier = (apt.patientId as any)?.patientId || `PAT-${(pUser?._id || apt._id).toString().slice(-6).toUpperCase()}`
+
     res.status(200).json({
       success: true,
       data: {
         ...apt,
         id: apt._id.toString(),
-        doctor: apt.doctorId,
-        organization: apt.organizationId,
+        doctor: apt.doctorId ? {
+          id: (apt.doctorId as any)._id?.toString() || apt.doctorId,
+          name: (apt.doctorId as any).name || "Doctor",
+          specialization: (apt.doctorId as any).specialization || "General Medicine"
+        } : undefined,
+        organization: apt.organizationId ? {
+          id: (apt.organizationId as any)._id?.toString() || apt.organizationId,
+          name: (apt.organizationId as any).name || "Healthcare Facility",
+          address: (apt.organizationId as any).address || "",
+          city: (apt.organizationId as any).city || ""
+        } : undefined,
         timeStr: apt.startTime,
-        consultationType: apt.type
+        consultationType: apt.type,
+        patientProfile: {
+          id: (pUser?._id || patientUserId || "p1").toString(),
+          patientId: pIdentifier,
+          name: pName,
+          email: pUser?.email || "",
+          mobile: apt.patientPhone || pUser?.phone || "",
+          preferredLanguage: "English",
+          avatarInitials: pName.split(" ").map((w: string) => w[0]).join("").toUpperCase()
+        },
+        allergies: allergies.map((a: any) => ({
+          id: a._id.toString(),
+          name: a.allergyName,
+          category: a.category || "Medication",
+          reaction: a.reactionDescription,
+          dateAdded: a.diagnosedDate || a.createdAt
+        })),
+        medicines: medicines.map((m: any) => ({
+          id: m._id.toString(),
+          name: m.medicineName,
+          dosage: m.dosage,
+          frequency: m.frequency,
+          foodInstruction: m.foodInstruction,
+          status: m.status || "active",
+          times: m.times || [],
+          startDate: m.startDate,
+          endDate: m.endDate
+        })),
+        medicalHistory: pastAppointments.map((p: any) => ({
+          id: p._id.toString(),
+          date: p.date,
+          type: "Appointment",
+          title: `${p.type || "Physical"} Consultation`,
+          subtitle: p.doctorId?.name ? `Dr. ${p.doctorId.name}` : "Clinical Consultation",
+          status: p.status === "COMPLETED" ? "Completed" : p.status
+        })),
+        currentCase
       }
     })
   } catch (error: any) {

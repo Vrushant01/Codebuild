@@ -94,7 +94,7 @@ export const doctorService = {
           createdAt: apt.createdAt,
           updatedAt: apt.updatedAt,
           attendance: apt.attendanceStatus === "YES" ? "ATTENDED" : "UNKNOWN",
-          patientProfile: {
+          patientProfile: apt.patientProfile || {
             id: apt.patientUserId?._id || (typeof apt.patientUserId === "string" ? apt.patientUserId : apt.patientId?._id || "usr_1"),
             patientId: apt.patientId?.patientId || (typeof apt.patientId === "string" ? apt.patientId : "PAT-CURRENT"),
             name: pName,
@@ -102,7 +102,11 @@ export const doctorService = {
             mobile: apt.patientPhone || apt.patientUserId?.phone || "",
             preferredLanguage: "English",
             avatarInitials: pName.split(" ").map((w: string) => w[0]).join("").toUpperCase()
-          }
+          },
+          allergies: apt.allergies || [],
+          medicines: apt.medicines || [],
+          medicalHistory: apt.medicalHistory || [],
+          currentCase: apt.currentCase || undefined
         }
       }
     } catch {}
