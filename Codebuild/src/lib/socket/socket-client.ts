@@ -10,16 +10,13 @@ export function getSocketClient(): Socket {
       withCredentials: true,
       autoConnect: true,
       reconnection: true,
-      reconnectionAttempts: 10,
+      reconnectionAttempts: 20,
       reconnectionDelay: 1000
     })
 
     globalSocket.on("connect", () => {
       console.log("🟢 MediReach Live WebSocket connected:", globalSocket?.id)
-      const user = JSON.parse(localStorage.getItem("currentUser") || "{}")
-      if (user.id || user._id) {
-        globalSocket?.emit("join-user-channel", user.id || user._id)
-      }
+      syncUserSocket()
     })
 
     globalSocket.on("disconnect", (reason) => {
@@ -28,4 +25,24 @@ export function getSocketClient(): Socket {
   }
 
   return globalSocket
+}
+
+export function syncUserSocket(explicitUser?: any): void {
+  if (!globalSocket || !globalSocket.connected) return
+
+  try {
+    const user = explicitUser || JSON.parse(localStorage.getItem("currentUser") || "{}")
+    const userId = user.id || user._id
+    if (userId) {
+      globalSocket.emit("join-user-channel", userId)
+    }
+    if (user.doctorId && user.doctorId !== userId) {
+      globalSocket.emit("join-user-channel", user.doctorId)
+    }
+    if (user.organizationId && user.organizationId !== userId) {
+      globalSocket.emit("join-user-channel", user.organizationId)
+    }
+  } catch (err) {
+    console.error("Error syncing user socket channel:", err)
+  }
 }

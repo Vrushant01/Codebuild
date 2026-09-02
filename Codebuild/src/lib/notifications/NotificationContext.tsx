@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react"
-import type { AppNotification, NotificationPreferences } from "./notification-types"
+import { type AppNotification, type NotificationPreferences, NotificationType } from "./notification-types"
 import { notificationService } from "./notification-service"
 import { useAuth } from "../auth/AuthContext"
 import { checkAndTriggerMedicationReminders, requestNotificationPermission } from "./medication-reminder-scheduler"
+import { getSocketClient, syncUserSocket } from "../socket/socket-client"
 import { toast } from "react-hot-toast"
 
 interface NotificationContextType {
@@ -54,7 +55,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const simulateNotification = useCallback((newNotification: AppNotification) => {
     setNotifications(prev => {
-      // Prevent duplicate in-memory toast
       if (prev.some(n => n.id === newNotification.id)) return prev
       return [newNotification, ...prev]
     })
@@ -70,7 +70,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           <div className="flex items-start">
             <div className="flex-shrink-0 pt-0.5">
               <div className="h-10 w-10 rounded-full bg-primary/15 text-primary flex items-center justify-center text-xl shadow-inner">
-                💊
+                🔔
               </div>
             </div>
             <div className="ml-3 flex-1">
@@ -95,16 +95,84 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     ), { duration: 6000 })
   }, [])
 
-  // Automated background checker for 10-minute prior and exact-time medication reminders
+  // Live WebSocket Real-Time Listener for instant notifications & appointments
+  useEffect(() => {
+    if (!isAuthenticated || !user) return
+
+    const socket = getSocketClient()
+    syncUserSocket(user)
+
+    const handleNewNotification = (data: any) => {
+      const notifItem: AppNotification = {
+        id: data.id || `notif_${Date.now()}`,
+        userId: user.id,
+        type: NotificationType.APPOINTMENT_CONFIRMED,
+        title: data.title || "New Notification",
+        message: data.message || "You have a new update.",
+        createdAt: new Date().toISOString(),
+        read: false,
+        actionUrl: data.actionUrl || "/app/appointments",
+        actionLabel: data.actionLabel || "View"
+      }
+      simulateNotification(notifItem)
+      loadData()
+    }
+
+    const handleAppointmentRequest = (data: any) => {
+      const patientName = data.patientName || "A patient"
+      const timeStr = data.startTime || ""
+      const dateStr = data.date || ""
+      const notifItem: AppNotification = {
+        id: `apt_req_${Date.now()}`,
+        userId: user.id,
+        type: NotificationType.APPOINTMENT_REMINDER,
+        title: "🩺 New Appointment Request",
+        message: `${patientName} requested an appointment${dateStr ? ` for ${dateStr}` : ""}${timeStr ? ` at ${timeStr}` : ""}.`,
+        createdAt: new Date().toISOString(),
+        read: false,
+        actionUrl: "/app/doctor/appointments",
+        actionLabel: "Review"
+      }
+      simulateNotification(notifItem)
+      loadData()
+    }
+
+    const handleStatusChanged = (data: any) => {
+      const status = data.status || "UPDATED"
+      const notifItem: AppNotification = {
+        id: `apt_status_${Date.now()}`,
+        userId: user.id,
+        type: status === "ACCEPTED" || status === "CONFIRMED" ? NotificationType.APPOINTMENT_CONFIRMED : NotificationType.APPOINTMENT_REJECTED,
+        title: status === "ACCEPTED" || status === "CONFIRMED" ? "✅ Appointment Confirmed" : `Appointment ${status}`,
+        message: data.message || `Your appointment status has changed to ${status}.`,
+        createdAt: new Date().toISOString(),
+        read: false,
+        actionUrl: "/app/patient/appointments",
+        actionLabel: "View"
+      }
+      simulateNotification(notifItem)
+      loadData()
+    }
+
+    socket.on("new-notification", handleNewNotification)
+    socket.on("new-appointment-request", handleAppointmentRequest)
+    socket.on("appointment-status-changed", handleStatusChanged)
+
+    return () => {
+      socket.off("new-notification", handleNewNotification)
+      socket.off("new-appointment-request", handleAppointmentRequest)
+      socket.off("appointment-status-changed", handleStatusChanged)
+    }
+  }, [isAuthenticated, user, simulateNotification, loadData])
+
+  // Automated background checker for medication reminders
   useEffect(() => {
     if (!isAuthenticated || user?.role !== "PATIENT") return
 
-    // Run initial check
     checkAndTriggerMedicationReminders((notif) => {
       simulateNotification(notif)
     })
 
-    // Poll every 20 seconds
     const interval = setInterval(() => {
       checkAndTriggerMedicationReminders((notif) => {
         simulateNotification(notif)
@@ -163,9 +231,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   )
 }
 
-export function useNotifications() {
+export function useNotifications(): NotificationContextType {
   const context = useContext(NotificationContext)
-  if (context === undefined) {
+  if (!context) {
     throw new Error("useNotifications must be used within a NotificationProvider")
   }
   return context

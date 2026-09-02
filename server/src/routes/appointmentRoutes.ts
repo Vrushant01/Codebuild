@@ -216,23 +216,57 @@ router.post("/", authenticateJWT, async (req: AuthRequest, res: Response): Promi
     })
 
     // 5. Create In-App Notification for Patient & Doctor
+    const patientMsg = `Your appointment request for ${date} at ${startTime} with ${doctor.name} has been sent for approval.`
     await Notification.create({
       userId: user._id,
       type: "appointment",
       title: "Appointment Request Submitted",
-      message: `Your appointment request for ${date} at ${startTime} with ${doctor.name} has been sent for approval.`,
+      message: patientMsg,
       relatedAppointmentId: newAppointment._id
     })
+    emitToUser(user._id.toString(), "new-notification", {
+      title: "Appointment Request Submitted",
+      message: patientMsg,
+      appointmentId: newAppointment._id
+    })
+
+    const doctorMsg = `New appointment requested by ${user.name} for ${date} at ${startTime}.`
+    const docPayload = {
+      appointmentId: newAppointment._id,
+      patientName: user.name,
+      doctorName: doctor.name,
+      date,
+      startTime,
+      type
+    }
 
     if (doctor.userId) {
       await Notification.create({
         userId: doctor.userId,
         type: "appointment",
-        title: "New Appointment Request",
-        message: `New appointment requested by ${user.name} for ${date} at ${startTime}.`,
+        title: "🩺 New Appointment Request",
+        message: doctorMsg,
         relatedAppointmentId: newAppointment._id
       })
-      emitToUser(doctor.userId.toString(), "new-appointment-request", { appointmentId: newAppointment._id })
+      emitToUser(doctor.userId.toString(), "new-notification", {
+        title: "🩺 New Appointment Request",
+        message: doctorMsg,
+        ...docPayload
+      })
+      emitToUser(doctor.userId.toString(), "new-appointment-request", docPayload)
+    }
+
+    if (doctor._id) {
+      emitToUser(doctor._id.toString(), "new-notification", {
+        title: "🩺 New Appointment Request",
+        message: doctorMsg,
+        ...docPayload
+      })
+      emitToUser(doctor._id.toString(), "new-appointment-request", docPayload)
+    }
+
+    if (organizationId) {
+      emitToUser(organizationId.toString(), "new-appointment-request", docPayload)
     }
 
     res.status(201).json({
@@ -279,12 +313,19 @@ router.patch("/:id/accept", authenticateJWT, async (req: AuthRequest, res: Respo
     const patientName = apt.patientName || "Patient"
 
     // 1. Create In-App Notification & WebSocket for Patient
+    const acceptMsg = `Your appointment with ${doctorName} on ${apt.date} at ${apt.startTime} has been ACCEPTED & confirmed!`
     await Notification.create({
       userId: apt.patientUserId,
       type: "appointment",
-      title: "Appointment Accepted",
-      message: `Your appointment with ${doctorName} on ${apt.date} at ${apt.startTime} has been ACCEPTED & confirmed!`,
+      title: "✅ Appointment Accepted",
+      message: acceptMsg,
       relatedAppointmentId: apt._id
+    })
+    emitToUser(apt.patientUserId.toString(), "new-notification", {
+      title: "✅ Appointment Accepted",
+      message: acceptMsg,
+      appointmentId: apt._id,
+      status: "ACCEPTED"
     })
     emitToUser(apt.patientUserId.toString(), "appointment-status-changed", {
       status: "ACCEPTED",
@@ -365,6 +406,11 @@ router.patch("/:id/status", authenticateJWT, async (req: AuthRequest, res: Respo
         appointmentId: apt._id,
         appointment: apt
       })
+      emitToUser(apt.patientUserId.toString(), "new-notification", {
+        title: "✅ Appointment Accepted",
+        message: `Your appointment with ${doctorName} on ${apt.date} at ${apt.startTime} is confirmed!`,
+        appointmentId: apt._id
+      })
 
       try {
         const patientUser = await User.findById(apt.patientUserId).lean()
@@ -429,16 +475,22 @@ router.patch("/:id/reject", authenticateJWT, async (req: AuthRequest, res: Respo
       return
     }
 
+    const rejectMsg = `Your appointment request for ${apt.date} could not be confirmed. Reason: ${reason || "Unavailable"}.`
     await Notification.create({
       userId: apt.patientUserId,
       type: "appointment",
       title: "Appointment Declined",
-      message: `Your appointment request for ${apt.date} could not be confirmed. Reason: ${reason || "Unavailable"}.`,
+      message: rejectMsg,
       relatedAppointmentId: apt._id
+    })
+    emitToUser(apt.patientUserId.toString(), "new-notification", {
+      title: "Appointment Declined",
+      message: rejectMsg,
+      appointmentId: apt._id
     })
     emitToUser(apt.patientUserId.toString(), "appointment-status-changed", { status: "REJECTED", appointmentId: apt._id })
 
-    res.status(200).json({ success: true, data: apt })
+    res.status(200).json({ success: true, message: "Appointment rejected.", data: apt })
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message || "Error rejecting appointment" })
   }
@@ -460,11 +512,30 @@ router.patch("/:id/cancel", authenticateJWT, async (req: AuthRequest, res: Respo
         cancelledBy
       },
       { new: true }
-    )
+    ).populate("doctorId")
 
     if (!apt) {
       res.status(404).json({ success: false, message: "Appointment not found." })
       return
+    }
+
+    const cancelMsg = `Appointment for ${apt.date} was cancelled (${reason || "No reason specified"}).`
+    // Notify the other party
+    const targetUserId = user.role === "PATIENT" ? (apt.doctorId as any)?.userId : apt.patientUserId
+    if (targetUserId) {
+      await Notification.create({
+        userId: targetUserId,
+        type: "appointment",
+        title: "Appointment Cancelled",
+        message: cancelMsg,
+        relatedAppointmentId: apt._id
+      })
+      emitToUser(targetUserId.toString(), "new-notification", {
+        title: "Appointment Cancelled",
+        message: cancelMsg,
+        appointmentId: apt._id
+      })
+      emitToUser(targetUserId.toString(), "appointment-status-changed", { status: newStatus, appointmentId: apt._id })
     }
 
     res.status(200).json({ success: true, message: "Appointment cancelled and time slot released.", data: apt })
@@ -488,13 +559,20 @@ router.patch("/:id/complete", authenticateJWT, async (req: AuthRequest, res: Res
     }
 
     // Notify patient that appointment is complete and review is unlocked
+    const completeMsg = `Your consultation is complete. You can now leave a verified review.`
     await Notification.create({
       userId: apt.patientUserId,
       type: "review",
       title: "Consultation Complete",
-      message: `Your appointment with Dr. is complete. You can now leave a verified review.`,
+      message: completeMsg,
       relatedAppointmentId: apt._id
     })
+    emitToUser(apt.patientUserId.toString(), "new-notification", {
+      title: "Consultation Complete",
+      message: completeMsg,
+      appointmentId: apt._id
+    })
+    emitToUser(apt.patientUserId.toString(), "appointment-status-changed", { status: "COMPLETED", appointmentId: apt._id })
 
     res.status(200).json({ success: true, message: "Appointment completed successfully.", data: apt })
   } catch (error: any) {
