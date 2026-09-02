@@ -1,0 +1,74 @@
+import React, { createContext, useContext, useState, useEffect } from "react"
+import type { ReactNode } from "react"
+import { reviewService } from "./review-service"
+import type { Review, ReviewSummary } from "./review-types"
+import { useAuth } from "../auth/AuthContext"
+
+interface ReviewContextType {
+  doctorReviews: Review[]
+  patientReviews: Review[]
+  summary: ReviewSummary | null
+  isLoading: boolean
+  refreshReviews: () => Promise<void>
+  submitReview: (data: Omit<Review, "id" | "createdAt" | "status" | "verifiedAt">) => Promise<void>
+}
+
+const ReviewContext = createContext<ReviewContextType | undefined>(undefined)
+
+export function ReviewProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth()
+  const [doctorReviews, setDoctorReviews] = useState<Review[]>([])
+  const [patientReviews, setPatientReviews] = useState<Review[]>([])
+  const [summary, setSummary] = useState<ReviewSummary | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  const refreshReviews = async () => {
+    setIsLoading(true)
+    const activeUserId = user?.id || (user as any)?._id || "doctor"
+
+    if (user?.role === "DOCTOR") {
+      const revs = await reviewService.getDoctorReviews(activeUserId)
+      setDoctorReviews(revs)
+      setSummary(reviewService.getFeedbackSummary(revs))
+    } else if (user?.role === "PATIENT") {
+      const revs = await reviewService.getPatientReviews(activeUserId)
+      setPatientReviews(revs)
+    } else {
+      // General load
+      const revs = await reviewService.getDoctorReviews(activeUserId)
+      setDoctorReviews(revs)
+      setSummary(reviewService.getFeedbackSummary(revs))
+    }
+    setIsLoading(false)
+  }
+
+  useEffect(() => {
+    refreshReviews()
+  }, [user])
+
+  const submitReview = async (data: Omit<Review, "id" | "createdAt" | "status" | "verifiedAt">) => {
+    await reviewService.submitReview(data)
+    await refreshReviews()
+  }
+
+  return (
+    <ReviewContext.Provider value={{
+      doctorReviews,
+      patientReviews,
+      summary,
+      isLoading,
+      refreshReviews,
+      submitReview
+    }}>
+      {children}
+    </ReviewContext.Provider>
+  )
+}
+
+export function useReviews() {
+  const context = useContext(ReviewContext)
+  if (context === undefined) {
+    throw new Error("useReviews must be used within a ReviewProvider")
+  }
+  return context
+}

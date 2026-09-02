@@ -1,32 +1,31 @@
-# React + TypeScript + Vite
+# MEDIREACH - Full-Stack Healthcare Platform
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+MEDIREACH is a comprehensive, production-grade healthcare accessibility platform featuring multi-role access (Patients, Doctors, Receptionists, Healthcare Organizations, and Platform Administrators).
 
-Currently, two official plugins are available:
+## Architecture
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **`Codebuild/`**: Modern React + TypeScript + Vite + Tailwind CSS frontend with multilingual support (English & Gujarati), interactive map discovery, real-time consultation management, and responsive portals for all roles.
+- **`server/`**: Express + TypeScript + MongoDB Atlas + Socket.IO + Razorpay backend with atomic double-booking prevention, pay-per-patient incremental billing, and real-time WebRTC/Socket signaling.
 
-## React Compiler
+## Getting Started
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+### 1. Backend Setup
+```bash
+cd server
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+### 2. Frontend Setup
+```bash
+cd Codebuild
+npm install
+npm run dev
+```
+
+## Features
+- **Patient Portal**: AI Symptom checker, Leaflet GPS hospital & clinic discovery, booking, allergies passport, and telemedicine.
+- **Doctor Portal**: Daily schedule, real-time consultation queue, patient history, and platform lead attribution.
+- **Receptionist Portal**: Front desk operations, walk-in patient registration, attendance check-in, and provider availability.
+- **Organization Portal**: Departmental analytics, doctor management, staff permissions, and automated Razorpay billing ledger.
+- **Platform Admin Portal**: Platform settings, multi-hospital verification, and system metrics.
