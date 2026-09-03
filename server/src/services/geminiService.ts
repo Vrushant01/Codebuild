@@ -91,45 +91,54 @@ CRITICAL SAFETY RESTRICTIONS & GUARDRAILS:
         }
       ]
 
-      const modelName = process.env.GEMINI_MODEL || "gemini-1.5-flash"
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`
+      const modelCandidates = [
+        process.env.GEMINI_MODEL,
+        "gemini-3.7-flash",
+        "gemini-3.5-flash",
+        "gemini-2.5-flash"
+      ].filter(Boolean) as string[]
 
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          systemInstruction: {
-            parts: [{ text: systemPrompt }]
-          },
-          contents,
-          generationConfig: {
-            temperature: 0.2,
-            responseMimeType: "application/json"
-          }
-        })
-      })
+      for (const modelName of modelCandidates) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`
 
-      if (res.ok) {
-        const data = await res.json()
-        const textOutput = data?.candidates?.[0]?.content?.parts?.[0]?.text
-        if (textOutput) {
-          const parsed = cleanAndParseJson<GeminiResponse>(textOutput)
-          if (parsed && parsed.reply) {
-            // Merge newly extracted symptoms with previous ones to preserve history
-            parsed.extractedSymptoms = {
-              symptoms: Array.from(new Set([...(currentSymptoms.symptoms || []), ...(parsed.extractedSymptoms?.symptoms || [])])),
-              location: parsed.extractedSymptoms?.location || currentSymptoms.location || null,
-              duration: parsed.extractedSymptoms?.duration || currentSymptoms.duration || null,
-              severity: parsed.extractedSymptoms?.severity || currentSymptoms.severity || null,
-              associatedSymptoms: Array.from(new Set([...(currentSymptoms.associatedSymptoms || []), ...(parsed.extractedSymptoms?.associatedSymptoms || [])])),
-              notes: Array.from(new Set([...(currentSymptoms.notes || []), ...(parsed.extractedSymptoms?.notes || [])]))
+          const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              systemInstruction: {
+                parts: [{ text: systemPrompt }]
+              },
+              contents,
+              generationConfig: {
+                temperature: 0.3,
+                responseMimeType: "application/json"
+              }
+            })
+          })
+
+          if (res.ok) {
+            const data = await res.json()
+            const textOutput = data?.candidates?.[0]?.content?.parts?.[0]?.text
+            if (textOutput) {
+              const parsed = cleanAndParseJson<GeminiResponse>(textOutput)
+              if (parsed && parsed.reply) {
+                // Merge newly extracted symptoms with previous ones to preserve history
+                parsed.extractedSymptoms = {
+                  symptoms: Array.from(new Set([...(currentSymptoms.symptoms || []), ...(parsed.extractedSymptoms?.symptoms || [])])),
+                  location: parsed.extractedSymptoms?.location || currentSymptoms.location || null,
+                  duration: parsed.extractedSymptoms?.duration || currentSymptoms.duration || null,
+                  severity: parsed.extractedSymptoms?.severity || currentSymptoms.severity || null,
+                  associatedSymptoms: Array.from(new Set([...(currentSymptoms.associatedSymptoms || []), ...(parsed.extractedSymptoms?.associatedSymptoms || [])])),
+                  notes: Array.from(new Set([...(currentSymptoms.notes || []), ...(parsed.extractedSymptoms?.notes || [])]))
+                }
+                return parsed
+              }
             }
-            return parsed
           }
+        } catch (mErr: any) {
+          console.warn(`⚠️ Model ${modelName} call attempt failed:`, mErr.message)
         }
-      } else {
-        const errText = await res.text()
-        console.warn(`⚠️ Gemini API response error (${res.status}):`, errText)
       }
     } catch (err: any) {
       console.warn("⚠️ Gemini API call error, falling back to intelligent medical triage engine:", err.message)
