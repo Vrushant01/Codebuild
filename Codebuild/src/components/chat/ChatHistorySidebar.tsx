@@ -1,12 +1,12 @@
 import React from "react"
-import { MessageSquare, Plus, Clock } from "lucide-react"
+import { MessageSquare, Plus, Clock, Trash2 } from "lucide-react"
 import { useChat } from "../../lib/chat/ChatContext"
 import { useTranslation } from "../../lib/i18n/useTranslation"
 import { Button } from "../ui/button"
 import { cn } from "../../lib/utils"
 
 export function ChatHistorySidebar({ className }: { className?: string }) {
-  const { history, activeSession, loadSession, startNewSession } = useChat()
+  const { history, activeSession, loadSession, startNewSession, deleteSession } = useChat()
   const { t } = useTranslation()
 
   const todaySessions = history.filter(s => {
@@ -39,23 +39,37 @@ export function ChatHistorySidebar({ className }: { className?: string }) {
             </h4>
             <div className="space-y-0.5">
               {todaySessions.map(session => (
-                <button
+                <div 
                   key={session.id}
-                  onClick={() => loadSession(session.id)}
                   className={cn(
-                    "w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors flex flex-col gap-1",
+                    "group relative w-full flex items-center justify-between rounded-lg text-sm transition-colors",
                     activeSession?.id === session.id 
                       ? "bg-primary/10 text-primary font-medium" 
                       : "hover:bg-muted text-foreground"
                   )}
                 >
-                  <span className="truncate block">{session.title}</span>
-                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-normal">
-                    <span className="uppercase">{session.language}</span>
-                    <span>&bull;</span>
-                    <span>{new Date(session.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                  </div>
-                </button>
+                  <button
+                    onClick={() => loadSession(session.id)}
+                    className="flex-1 text-left px-3 py-2.5 flex flex-col gap-1 min-w-0"
+                  >
+                    <span className="truncate block pr-2">{session.title}</span>
+                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-normal">
+                      <span className="uppercase">{session.language}</span>
+                      <span>&bull;</span>
+                      <span>{new Date(session.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      deleteSession(session.id)
+                    }}
+                    title="Delete conversation"
+                    className="opacity-0 group-hover:opacity-100 p-2 text-muted-foreground hover:text-destructive transition-opacity mr-1"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               ))}
             </div>
           </div>
@@ -68,23 +82,37 @@ export function ChatHistorySidebar({ className }: { className?: string }) {
             </h4>
             <div className="space-y-0.5">
               {olderSessions.map(session => (
-                <button
+                <div 
                   key={session.id}
-                  onClick={() => loadSession(session.id)}
                   className={cn(
-                    "w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors flex flex-col gap-1",
+                    "group relative w-full flex items-center justify-between rounded-lg text-sm transition-colors",
                     activeSession?.id === session.id 
                       ? "bg-primary/10 text-primary font-medium" 
                       : "hover:bg-muted text-foreground"
                   )}
                 >
-                  <span className="truncate block">{session.title}</span>
-                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-normal">
-                    <span className="uppercase">{session.language}</span>
-                    <span>&bull;</span>
-                    <span>{new Date(session.updatedAt).toLocaleDateString()}</span>
-                  </div>
-                </button>
+                  <button
+                    onClick={() => loadSession(session.id)}
+                    className="flex-1 text-left px-3 py-2.5 flex flex-col gap-1 min-w-0"
+                  >
+                    <span className="truncate block pr-2">{session.title}</span>
+                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-normal">
+                      <span className="uppercase">{session.language}</span>
+                      <span>&bull;</span>
+                      <span>{new Date(session.updatedAt).toLocaleDateString()}</span>
+                    </div>
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      deleteSession(session.id)
+                    }}
+                    title="Delete conversation"
+                    className="opacity-0 group-hover:opacity-100 p-2 text-muted-foreground hover:text-destructive transition-opacity mr-1"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               ))}
             </div>
           </div>

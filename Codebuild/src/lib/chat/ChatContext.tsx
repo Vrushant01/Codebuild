@@ -1,7 +1,9 @@
-import React, { createContext, useContext, useState, useEffect } from "react"
+import React, { createContext, useContext, useState, useEffect, useRef } from "react"
 import type { ChatSession, ChatMessage, SymptomData } from "./chat-types"
 import { mockAiService } from "./mock-ai-service"
 import { useLanguage } from "../i18n/LanguageContext"
+import { useAuth } from "../auth/AuthContext"
+import { apiClient } from "../api/apiClient"
 
 interface ChatContextType {
   activeSession: ChatSession | null
@@ -10,6 +12,7 @@ interface ChatContextType {
   startNewSession: () => void
   sendMessage: (text: string) => Promise<void>
   loadSession: (sessionId: string) => void
+  deleteSession: (sessionId: string) => void
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined)
@@ -25,41 +28,89 @@ const createEmptySymptoms = (): SymptomData => ({
 
 export function ChatProvider({ children }: { children: React.ReactNode }) {
   const { currentLanguage } = useLanguage()
+  const { user } = useAuth()
   const [history, setHistory] = useState<ChatSession[]>([])
   const [activeSession, setActiveSession] = useState<ChatSession | null>(null)
   const [isTyping, setIsTyping] = useState(false)
 
-  // Load from local storage
+  // Derive unique identifier for current logged in user
+  const userId = user?.id || (user as any)?._id || (user?.email ? user.email.toLowerCase().trim() : "anonymous_guest")
+  const storageKey = `medireach_chat_history_${userId}`
+  const prevUserIdRef = useRef<string | null>(null)
+
+  // Function to create a fresh empty session
+  const createNewSessionObject = (): ChatSession => ({
+    id: `chat_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+    title: "New Conversation",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    language: currentLanguage,
+    messages: [],
+    symptoms: createEmptySymptoms(),
+    healthcareSearchReady: false
+  })
+
+  // Load chat history when user changes or mounts
   useEffect(() => {
-    const saved = localStorage.getItem("medireach_chat_history")
-    if (saved) {
-      try {
-        setHistory(JSON.parse(saved))
-      } catch(e) {}
+    // If user switched, reset active session to prevent showing previous user's chat
+    const isUserSwitch = prevUserIdRef.current !== null && prevUserIdRef.current !== userId
+    prevUserIdRef.current = userId
+
+    let initialHistory: ChatSession[] = []
+    try {
+      const saved = localStorage.getItem(storageKey)
+      if (saved) {
+        initialHistory = JSON.parse(saved)
+      }
+    } catch (e) {
+      console.warn("Failed to parse user chat history:", e)
     }
-  }, [])
+
+    setHistory(initialHistory)
+
+    if (isUserSwitch || !activeSession) {
+      mockAiService.resetState()
+      setActiveSession(createNewSessionObject())
+    }
+
+    // If authenticated, also fetch server-synced sessions for this user
+    if (user) {
+      apiClient.get<{ success: boolean; data: any[] }>("/chat/sessions")
+        .then(res => {
+          if (res && res.data && Array.isArray(res.data) && res.data.length > 0) {
+            const serverSessions: ChatSession[] = res.data.map(item => ({
+              id: item.sessionId || item._id,
+              title: item.messages?.[0]?.text?.substring(0, 30) || "Conversation",
+              createdAt: item.createdAt || new Date().toISOString(),
+              updatedAt: item.updatedAt || new Date().toISOString(),
+              language: item.language || currentLanguage,
+              messages: item.messages || [],
+              symptoms: item.symptoms || createEmptySymptoms(),
+              healthcareSearchReady: false
+            }))
+
+            setHistory(prev => {
+              // Merge server sessions with local ones, eliminating duplicates by ID
+              const map = new Map<string, ChatSession>()
+              serverSessions.forEach(s => map.set(s.id, s))
+              prev.forEach(s => map.set(s.id, s))
+              const merged = Array.from(map.values()).sort(
+                (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+              )
+              localStorage.setItem(storageKey, JSON.stringify(merged))
+              return merged
+            })
+          }
+        })
+        .catch(err => console.warn("Could not sync server chat sessions:", err.message))
+    }
+  }, [userId])
 
   const startNewSession = () => {
     mockAiService.resetState()
-    const newSession: ChatSession = {
-      id: `chat_${Date.now()}`,
-      title: "New Conversation",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      language: currentLanguage,
-      messages: [],
-      symptoms: createEmptySymptoms(),
-      healthcareSearchReady: false
-    }
+    const newSession = createNewSessionObject()
     setActiveSession(newSession)
   }
-
-  // Auto-start session if none exists when Provider mounts
-  useEffect(() => {
-    if (!activeSession) {
-      startNewSession()
-    }
-  }, [])
 
   const saveToHistory = (session: ChatSession) => {
     setHistory(prev => {
@@ -70,9 +121,19 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       } else {
         newHistory = [session, ...prev]
       }
-      localStorage.setItem("medireach_chat_history", JSON.stringify(newHistory))
+      localStorage.setItem(storageKey, JSON.stringify(newHistory))
       return newHistory
     })
+
+    // Sync to backend if authenticated
+    if (user && session.messages.length > 0) {
+      apiClient.post("/chat/session", {
+        sessionId: session.id,
+        language: session.language,
+        messages: session.messages,
+        symptoms: session.symptoms
+      }).catch(err => console.warn("Failed to sync session to backend:", err))
+    }
   }
 
   const sendMessage = async (text: string) => {
@@ -134,7 +195,18 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
     const session = history.find(s => s.id === sessionId)
     if (session) {
       setActiveSession(session)
-      // We don't restore aiState perfectly in this mock, but it's enough for viewing history
+    }
+  }
+
+  const deleteSession = (sessionId: string) => {
+    setHistory(prev => {
+      const filtered = prev.filter(s => s.id !== sessionId)
+      localStorage.setItem(storageKey, JSON.stringify(filtered))
+      return filtered
+    })
+
+    if (activeSession?.id === sessionId) {
+      startNewSession()
     }
   }
 
@@ -145,7 +217,8 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
       isTyping,
       startNewSession,
       sendMessage,
-      loadSession
+      loadSession,
+      deleteSession
     }}>
       {children}
     </ChatContext.Provider>
@@ -159,3 +232,4 @@ export function useChat() {
   }
   return context
 }
+
