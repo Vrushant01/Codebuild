@@ -30,11 +30,11 @@ export function LandingFooter() {
           <div>
             <h4 className="font-heading font-semibold mb-4 text-foreground">Product</h4>
             <ul className="space-y-3 text-sm text-muted-foreground">
-              <li><a href="#" className="hover:text-primary transition-colors">AI Assistant</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Healthcare Discovery</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Appointments</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Telemedicine</a></li>
-              <li><a href="#" className="hover:text-primary transition-colors">Medicine Schedule</a></li>
+              <li><a href="#ai-assistant" className="hover:text-primary transition-colors">AI Assistant</a></li>
+              <li><a href="#healthcare" className="hover:text-primary transition-colors">Healthcare Discovery</a></li>
+              <li><a href="#how-it-works" className="hover:text-primary transition-colors">How it Works</a></li>
+              <li><a href="#features" className="hover:text-primary transition-colors">Features</a></li>
+              <li><a href="#about" className="hover:text-primary transition-colors">Ecosystem</a></li>
             </ul>
           </div>
 

@@ -18,7 +18,7 @@ export function LandingNavbar() {
 
   const navLinks = [
     { title: "How it Works", href: "#how-it-works" },
-    { title: "Healthcare", href: "#discovery" },
+    { title: "Healthcare", href: "#healthcare" },
     { title: "Features", href: "#features" },
     { title: "About", href: "#about" },
   ]

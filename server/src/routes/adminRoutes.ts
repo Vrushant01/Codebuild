@@ -142,7 +142,7 @@ router.get("/patients", authenticateJWT, authorizeRoles("ADMIN"), async (req: Au
         email: u?.email || "",
         phone: u?.phone || "",
         gender: p.gender,
-        age: p.age,
+        age: (p as any).age,
         bloodGroup: p.bloodGroup,
         emergencyContact: p.emergencyContact,
         createdAt: p.createdAt
@@ -296,14 +296,14 @@ router.post("/settings/change-password", authenticateJWT, authorizeRoles("ADMIN"
       return
     }
 
-    const isMatch = await bcrypt.compare(currentPassword, user.password)
+    const isMatch = await bcrypt.compare(currentPassword, (user as any).password)
     if (!isMatch) {
       res.status(400).json({ success: false, message: "Incorrect current password." })
       return
     }
 
     const salt = await bcrypt.genSalt(10)
-    user.password = await bcrypt.hash(newPassword, salt)
+    ;(user as any).password = await bcrypt.hash(newPassword, salt)
     await user.save()
 
     res.status(200).json({ success: true, message: "Admin password changed successfully." })

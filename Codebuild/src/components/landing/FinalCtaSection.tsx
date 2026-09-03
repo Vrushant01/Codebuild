@@ -22,9 +22,9 @@ export function FinalCtaSection() {
         
         <div className="flex flex-col sm:flex-row justify-center gap-4">
           <Button size="lg" variant="secondary" className="rounded-full h-14 px-8 text-base text-primary shadow-lg" asChild>
-            <Link to="/patient/map">
+            <a href="#healthcare">
               Find Healthcare <ArrowRight className="ml-2 w-5 h-5" />
-            </Link>
+            </a>
           </Button>
           <Button size="lg" className="rounded-full h-14 px-8 text-base bg-primary-foreground/10 hover:bg-primary-foreground/20 border border-primary-foreground/20 text-primary-foreground backdrop-blur" asChild>
             <Link to="/register">

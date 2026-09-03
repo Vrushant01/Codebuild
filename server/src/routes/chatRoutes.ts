@@ -32,7 +32,9 @@ router.post("/message", optionalAuthenticateJWT, async (req: AuthRequest, res: R
           suggestions: aiResult.suggestions || []
         },
         updatedSymptoms: aiResult.extractedSymptoms || currentSymptoms,
-        recommendedSpecialization: aiResult.recommendedSpecialization
+        recommendedSpecialization: aiResult.recommendedSpecialization,
+        isEmergency: aiResult.isEmergency || false,
+        emergencyAdvice: aiResult.emergencyAdvice || null
       }
     })
   } catch (error: any) {

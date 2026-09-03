@@ -10,6 +10,7 @@ interface ChatMessageProps {
 
 export function ChatMessage({ message, onSuggestionClick }: ChatMessageProps) {
   const isAI = message.role === "assistant"
+  const isEmergency = message.type === "redirection"
 
   return (
     <div className={cn(
@@ -26,7 +27,9 @@ export function ChatMessage({ message, onSuggestionClick }: ChatMessageProps) {
           <div className={cn(
             "w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center shadow-sm",
             isAI 
-              ? "bg-primary/10 border border-primary/20 text-primary" 
+              ? isEmergency 
+                ? "bg-destructive/15 border border-destructive/30 text-destructive"
+                : "bg-primary/10 border border-primary/20 text-primary" 
               : "bg-muted border border-border text-muted-foreground"
           )}>
             {isAI ? <Activity className="w-4 h-4 md:w-5 md:h-5" /> : <User className="w-4 h-4 md:w-5 md:h-5" />}
@@ -40,9 +43,11 @@ export function ChatMessage({ message, onSuggestionClick }: ChatMessageProps) {
         )}>
           
           <div className={cn(
-            "px-4 md:px-5 py-3 md:py-3.5 rounded-3xl shadow-sm text-[15px] md:text-base leading-relaxed break-words",
+            "px-4 md:px-5 py-3 md:py-3.5 rounded-3xl shadow-sm text-[15px] md:text-base leading-relaxed break-words whitespace-pre-line",
             isAI 
-              ? "bg-card border border-border rounded-bl-sm text-card-foreground" 
+              ? isEmergency
+                ? "bg-destructive/10 border border-destructive/30 rounded-bl-sm text-foreground shadow-destructive/5"
+                : "bg-card border border-border rounded-bl-sm text-card-foreground" 
               : "bg-primary text-primary-foreground rounded-br-sm"
           )}>
             {message.text}

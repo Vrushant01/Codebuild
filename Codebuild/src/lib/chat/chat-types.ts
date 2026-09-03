@@ -1,5 +1,5 @@
 export type ChatRole = "user" | "assistant" | "system"
-export type MessageType = "text" | "question" | "symptom-summary" | "suggestion" | "transition"
+export type MessageType = "text" | "question" | "symptom-summary" | "suggestion" | "transition" | "redirection" | "summary"
 
 export interface ChatMessage {
   id: string

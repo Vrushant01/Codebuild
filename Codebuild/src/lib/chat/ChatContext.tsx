@@ -116,7 +116,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
         ...currentSession,
         messages: [...currentSession.messages, aiMessage],
         symptoms: updatedSymptoms,
-        healthcareSearchReady: response.type === "transition" || response.type === "symptom-summary",
+        healthcareSearchReady: response.type === "transition" || response.type === "symptom-summary" || response.type === "summary",
         updatedAt: new Date().toISOString()
       }
       

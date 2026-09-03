@@ -45,12 +45,12 @@ export function HeroSection() {
             
             <div className="flex flex-col sm:flex-row gap-4">
               <Button size="lg" className="rounded-full h-14 px-8 text-base shadow-sm" asChild>
-                <Link to="/patient/map">
+                <a href="#healthcare">
                   Find Healthcare <ArrowRight className="ml-2 w-5 h-5" />
-                </Link>
+                </a>
               </Button>
               <Button size="lg" variant="outline" className="rounded-full h-14 px-8 text-base bg-background/50 backdrop-blur" asChild>
-                <Link to="/patient/chat">
+                <Link to="/login">
                   <Play className="mr-2 w-4 h-4 fill-foreground" /> Meet Medireach AI
                 </Link>
               </Button>

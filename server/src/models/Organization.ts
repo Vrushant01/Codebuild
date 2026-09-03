@@ -36,7 +36,7 @@ export interface IOrganization extends Document {
   }
   receptionistEnabled: boolean
   telemedicineEnabled: boolean
-  listingStatus: ListingStatus
+  listingStatus: "PENDING" | "APPROVED" | "ACTIVE" | "SUSPENDED" | "INACTIVE" | "REJECTED" | string
   rating: number
   reviewCount: number
   imageUrl?: string

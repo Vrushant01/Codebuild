@@ -320,8 +320,8 @@ router.get("/:id/receptionists", authenticateJWT, async (req: AuthRequest, res: 
         name: r.name || u?.name || "Receptionist",
         email: u?.email || r.email || "",
         phone: u?.phone || r.phone || "",
-        shift: r.shift || "Morning",
-        deskLocation: r.deskLocation || "Main Reception",
+        shift: (r as any).shift || "Morning",
+        deskLocation: (r as any).deskLocation || "Main Reception",
         status: r.status || "active"
       }
     })
