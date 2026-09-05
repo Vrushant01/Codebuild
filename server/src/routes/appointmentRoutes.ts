@@ -210,7 +210,7 @@ router.get("/:id", authenticateJWT, async (req: AuthRequest, res: Response): Pro
 router.post("/", authenticateJWT, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const user = req.user!
-    const {
+    let {
       doctorId,
       organizationId,
       date,
@@ -219,19 +219,21 @@ router.post("/", authenticateJWT, async (req: AuthRequest, res: Response): Promi
       type = "Physical",
       appointmentFor = "Myself",
       beneficiaryName,
+      patientName,
+      patientPhone,
       symptoms = [],
       notes
     } = req.body
 
-    if (!doctorId || !organizationId || !date || !startTime) {
+    if (!doctorId || !date || !startTime) {
       res.status(400).json({
         success: false,
-        message: "Doctor ID, Organization ID, date, and startTime are required to book an appointment."
+        message: "Doctor ID, date, and startTime are required to book an appointment."
       })
       return
     }
 
-    // 1. Verify Doctor & Org
+    // 1. Verify Doctor
     let doctor: any = null
     try {
       doctor = await Doctor.findById(doctorId)
@@ -244,24 +246,38 @@ router.post("/", authenticateJWT, async (req: AuthRequest, res: Response): Promi
       return
     }
 
+    // 2. Resolve Organization
     let organization: any = null
-    try {
-      organization = await Organization.findById(organizationId)
-    } catch {}
+    if (organizationId) {
+      try {
+        organization = await Organization.findById(organizationId)
+      } catch {}
+    }
     if (!organization && doctor.organizationId) {
       organization = await Organization.findById(doctor.organizationId).catch(() => null)
     }
+    if (!organization && user.role === "RECEPTIONIST") {
+      const { Receptionist } = await import("../models/Receptionist.js")
+      const rec = await Receptionist.findOne({ userId: user._id })
+      if (rec?.organizationId) {
+        organization = await Organization.findById(rec.organizationId).catch(() => null)
+      }
+    }
     if (!organization) {
-      organization = await Organization.findOne({ listingStatus: "ACTIVE" })
+      organization = await Organization.findOne({ listingStatus: { $in: ["ACTIVE", "APPROVED"] } })
+    }
+    if (!organization) {
+      organization = await Organization.findOne()
     }
     if (!organization) {
       res.status(404).json({ success: false, message: "Healthcare organization not found." })
       return
     }
+    organizationId = organization._id
 
-    // 2. ATOMIC DOUBLE-BOOKING CHECK (Rule 1 & Rule 33)
+    // 3. ATOMIC DOUBLE-BOOKING CHECK (Rule 1 & Rule 33)
     const existingConflict = await Appointment.findOne({
-      doctorId,
+      doctorId: doctor._id,
       date,
       startTime,
       status: { $in: ["PENDING", "ACCEPTED", "CONFIRMED", "COMPLETED"] }
@@ -276,69 +292,87 @@ router.post("/", authenticateJWT, async (req: AuthRequest, res: Response): Promi
       return
     }
 
-    // 3. Find Patient Profile if exists
-    const patientProfile = await Patient.findOne({ userId: user._id })
+    // 4. Resolve / Auto-provision Patient Profile
+    const finalPatientName = patientName || beneficiaryName || (user.role === "PATIENT" ? user.name : "Walk-in Patient")
+    const finalPatientPhone = patientPhone || (user.role === "PATIENT" ? user.phone : "")
 
-    // 4. Generate Telemedicine Room ID if online
+    let patientProfile = await Patient.findOne({
+      $or: [
+        { userId: user._id },
+        { name: finalPatientName, phone: finalPatientPhone && finalPatientPhone.length > 5 ? finalPatientPhone : undefined }
+      ].filter(Boolean) as any
+    })
+
+    if (!patientProfile && (user.role === "RECEPTIONIST" || user.role === "DOCTOR" || user.role === "ORGANIZATION")) {
+      const uniqueCode = `PAT-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
+      const qrToken = `QR_${uniqueCode}_${Date.now()}`
+      patientProfile = await Patient.create({
+        patientId: uniqueCode,
+        name: finalPatientName,
+        phone: finalPatientPhone || "+91 98765 43210",
+        email: `${finalPatientName.toLowerCase().replace(/[^a-z0-9]/g, "")}@example.com`,
+        qrCodeToken: qrToken,
+        preferredLanguage: "en"
+      }).catch(() => null)
+    }
+
+    // Determine initial status: If booked by Receptionist / Doctor / Org front desk, confirm and check-in immediately!
+    const isFrontDeskBooking = user.role === "RECEPTIONIST" || user.role === "DOCTOR" || user.role === "ORGANIZATION"
+    const initialStatus = isFrontDeskBooking ? "CONFIRMED" : "PENDING"
+    const initialAttendance = isFrontDeskBooking ? "YES" : "NO"
+
+    // 5. Generate Telemedicine Room ID if online
     const telemedicineRoomId = type === "Online" ? `room_med_${Date.now()}_${Math.random().toString(36).substr(2, 6)}` : undefined
 
     const newAppointment = await Appointment.create({
       patientId: patientProfile?._id,
-      patientUserId: user._id,
-      patientName: beneficiaryName || user.name,
-      patientPhone: user.phone,
-      doctorId,
+      patientUserId: user.role === "PATIENT" ? user._id : (patientProfile?.userId || user._id),
+      patientName: finalPatientName,
+      patientPhone: finalPatientPhone,
+      doctorId: doctor._id,
       organizationId,
       date,
       startTime,
       endTime: endTime || "",
       type,
-      status: "PENDING",
+      status: initialStatus,
+      attendanceStatus: initialAttendance,
       appointmentFor,
-      beneficiaryName,
-      symptoms: Array.isArray(symptoms) ? symptoms : [symptoms],
+      beneficiaryName: finalPatientName,
+      symptoms: Array.isArray(symptoms) ? symptoms : (symptoms ? [symptoms] : (notes ? [notes] : [])),
       notes,
       fee: type === "Online" ? (doctor.telemedicineFee || 400) : (doctor.consultationFee || 500),
-      paymentStatus: "pending",
+      paymentStatus: isFrontDeskBooking ? "paid" : "pending",
       telemedicineRoomId
     })
 
-    // 5. Create In-App Notification for Patient & Doctor
-    const patientMsg = `Your appointment request for ${date} at ${startTime} with ${doctor.name} has been sent for approval.`
-    await Notification.create({
-      userId: user._id,
-      type: "appointment",
-      title: "Appointment Request Submitted",
-      message: patientMsg,
-      relatedAppointmentId: newAppointment._id
-    })
-    emitToUser(user._id.toString(), "new-notification", {
-      title: "Appointment Request Submitted",
-      message: patientMsg,
-      appointmentId: newAppointment._id
-    })
+    // 6. Real-time notifications and WebSocket broadcasts
+    const notifyMsg = isFrontDeskBooking
+      ? `Walk-in patient ${finalPatientName} registered and checked in for ${startTime} today with Dr. ${doctor.name}.`
+      : `New appointment requested by ${finalPatientName} for ${date} at ${startTime}.`
 
-    const doctorMsg = `New appointment requested by ${user.name} for ${date} at ${startTime}.`
     const docPayload = {
       appointmentId: newAppointment._id,
-      patientName: user.name,
+      patientName: finalPatientName,
       doctorName: doctor.name,
       date,
       startTime,
-      type
+      type,
+      status: initialStatus,
+      attendance: initialAttendance
     }
 
     if (doctor.userId) {
       await Notification.create({
         userId: doctor.userId,
         type: "appointment",
-        title: "🩺 New Appointment Request",
-        message: doctorMsg,
+        title: isFrontDeskBooking ? "🩺 Walk-in Patient Arrival" : "🩺 New Appointment Request",
+        message: notifyMsg,
         relatedAppointmentId: newAppointment._id
-      })
+      }).catch(() => null)
       emitToUser(doctor.userId.toString(), "new-notification", {
-        title: "🩺 New Appointment Request",
-        message: doctorMsg,
+        title: isFrontDeskBooking ? "🩺 Walk-in Patient Arrival" : "🩺 New Appointment Request",
+        message: notifyMsg,
         ...docPayload
       })
       emitToUser(doctor.userId.toString(), "new-appointment-request", docPayload)
@@ -346,8 +380,8 @@ router.post("/", authenticateJWT, async (req: AuthRequest, res: Response): Promi
 
     if (doctor._id) {
       emitToUser(doctor._id.toString(), "new-notification", {
-        title: "🩺 New Appointment Request",
-        message: doctorMsg,
+        title: isFrontDeskBooking ? "🩺 Walk-in Patient Arrival" : "🩺 New Appointment Request",
+        message: notifyMsg,
         ...docPayload
       })
       emitToUser(doctor._id.toString(), "new-appointment-request", docPayload)
@@ -359,7 +393,7 @@ router.post("/", authenticateJWT, async (req: AuthRequest, res: Response): Promi
 
     res.status(201).json({
       success: true,
-      message: "Appointment request submitted successfully.",
+      message: isFrontDeskBooking ? "Walk-in patient registered and confirmed successfully." : "Appointment request submitted successfully.",
       data: {
         ...newAppointment.toObject(),
         id: newAppointment._id.toString(),
@@ -371,10 +405,14 @@ router.post("/", authenticateJWT, async (req: AuthRequest, res: Response): Promi
         organization: {
           id: organization._id.toString(),
           name: organization.name,
-          address: organization.address
+          address: organization.address,
+          city: organization.city
         },
+        patientName: finalPatientName,
         timeStr: newAppointment.startTime,
-        consultationType: newAppointment.type
+        consultationType: newAppointment.type,
+        attendance: initialAttendance,
+        checkInStatus: initialAttendance === "YES" ? "Checked In" : "Expected"
       }
     })
   } catch (error: any) {

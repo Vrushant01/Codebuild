@@ -170,6 +170,18 @@ export const gu: TranslationType = {
     updatedToast: "એલર્જી અપડેટ કરવામાં આવી",
     removedToast: "એલર્જી કાઢી નાખવામાં આવી",
     notProvided: "એલર્જી માહિતી પૂરી પાડવામાં આવી નથી.",
+    categories: {
+      Medication: "દવાઓ",
+      Food: "ખોરાક",
+      Environmental: "પર્યાવરણીય",
+      Other: "અન્ય",
+      medication: "દવાઓ",
+      food: "ખોરાક",
+      environmental: "પર્યાવરણીય",
+      other: "અન્ય",
+      Drug: "દવાઓ",
+      drug: "દવાઓ"
+    },
     types: {
       food: "ખોરાક",
       drug: "દવાઓ",

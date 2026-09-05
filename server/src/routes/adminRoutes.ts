@@ -8,6 +8,7 @@ import { Subscription } from "../models/Subscription.js"
 import { BillingInvoice } from "../models/Billing.js"
 import { PlatformSettings } from "../models/PlatformSettings.js"
 import { User } from "../models/User.js"
+import { Notification } from "../models/Notification.js"
 import bcrypt from "bcryptjs"
 import { authenticateJWT, AuthRequest } from "../middleware/auth.js"
 import { authorizeRoles } from "../middleware/rbac.js"
@@ -65,13 +66,61 @@ router.get("/organizations", authenticateJWT, authorizeRoles("ADMIN"), async (re
   }
 })
 
-// PATCH /api/admin/organizations/:id/status (Approve / Suspend / Activate)
+// PATCH /api/admin/organizations/:id/status (Approve / Suspend / Activate / Reject)
 router.patch("/organizations/:id/status", authenticateJWT, authorizeRoles("ADMIN"), async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { status } = req.body // "ACTIVE" | "APPROVED" | "SUSPENDED" | "INACTIVE"
+    const { status } = req.body // "ACTIVE" | "APPROVED" | "SUSPENDED" | "INACTIVE" | "REJECTED"
     const updated = await Organization.findByIdAndUpdate(req.params.id, { listingStatus: status }, { new: true })
+    if (!updated) {
+      res.status(404).json({ success: false, message: "Organization not found" })
+      return
+    }
+
+    // Determine user status
+    let userStatus: "active" | "pending" | "suspended" | "inactive" = "pending"
+    if (status === "ACTIVE" || status === "APPROVED") {
+      userStatus = "active"
+    } else if (status === "SUSPENDED") {
+      userStatus = "suspended"
+    } else if (status === "REJECTED" || status === "INACTIVE") {
+      userStatus = "inactive"
+    }
+
+    // Sync linked user account
+    if (updated.userId) {
+      await User.findByIdAndUpdate(updated.userId, { 
+        accountStatus: userStatus,
+        role: "ORGANIZATION"
+      })
+
+      if (userStatus === "active") {
+        await Notification.create({
+          userId: updated.userId,
+          type: "organization_approval",
+          title: "Organization Approved!",
+          message: `Congratulations! ${updated.name} has been approved by the platform Admin. Your facility is now live on the map and you can manage your operations.`,
+          actionUrl: `/app/organization`
+        })
+      }
+    } else if (updated.contact?.email) {
+      const foundUser = await User.findOne({ email: updated.contact.email.toLowerCase().trim() })
+      if (foundUser) {
+        foundUser.accountStatus = userStatus
+        foundUser.role = "ORGANIZATION"
+        await foundUser.save()
+        updated.userId = foundUser._id
+        await updated.save()
+      }
+    }
+
+    clearCache("organization")
     clearCache("organizations")
-    res.status(200).json({ success: true, message: `Organization status updated to ${status}`, data: updated })
+
+    res.status(200).json({ 
+      success: true, 
+      message: `Organization status updated to ${status}. User account set to ${userStatus}.`, 
+      data: updated 
+    })
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message || "Error updating organization status" })
   }

@@ -100,10 +100,12 @@ export default function OrgServicesPage() {
               <div className="mb-4">
                 <div className="flex items-start justify-between mb-2">
                   <h4 className="font-bold text-lg leading-tight">{service.name}</h4>
-                  <span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${
-                    service.status === "Active" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400" : "bg-muted text-muted-foreground"
+                  <span className={`inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border shadow-xs ${
+                    service.status === "Active" 
+                      ? "bg-white text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-700" 
+                      : "bg-white text-slate-600 border-slate-300 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-700"
                   }`}>
-                    {service.status === "Active" ? <CheckCircle className="w-3 h-3" /> : <Ban className="w-3 h-3" />}
+                    {service.status === "Active" ? <CheckCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Ban className="w-3.5 h-3.5" />}
                     {service.status}
                   </span>
                 </div>

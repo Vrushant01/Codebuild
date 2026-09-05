@@ -68,8 +68,8 @@ export default function ReceptionistOrganizationPage() {
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-2xl font-bold">{org.name}</h2>
-                <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 text-xs font-bold rounded-full">
-                  {org.listingStatus || "ACTIVE"}
+                <span className="px-3 py-0.5 bg-white text-emerald-700 border border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-700 text-xs font-bold rounded-full shadow-xs">
+                  ✓ {org.listingStatus || "ACTIVE"}
                 </span>
               </div>
               <p className="text-primary font-medium mt-0.5">{org.type || "Multi-specialty Hospital"}</p>

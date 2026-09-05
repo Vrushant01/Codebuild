@@ -122,12 +122,12 @@ export default function OrgAppointmentsPage() {
                 <span className="text-xs font-medium px-2 py-1 bg-muted rounded-md flex items-center gap-1">
                   {apt.consultationType === "Online" ? <Video className="w-3 h-3" /> : <MapPin className="w-3 h-3" />} {apt.consultationType || "Physical"}
                 </span>
-                <span className={`px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider ${
-                  apt.status === "PENDING" ? "bg-amber-100 text-amber-700" :
-                  apt.status === "CONFIRMED" || apt.status === "ACCEPTED" ? "bg-blue-100 text-blue-700" :
-                  apt.status === "COMPLETED" ? "bg-emerald-100 text-emerald-700" :
-                  apt.status === "CANCELLED" ? "bg-rose-100 text-rose-700" :
-                  "bg-muted text-muted-foreground"
+                <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider border shadow-xs ${
+                  apt.status === "PENDING" ? "bg-white text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-700" :
+                  apt.status === "CONFIRMED" || apt.status === "ACCEPTED" ? "bg-white text-blue-700 border-blue-300 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-700" :
+                  apt.status === "COMPLETED" ? "bg-white text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-700" :
+                  apt.status === "CANCELLED" ? "bg-white text-rose-700 border-rose-300 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-700" :
+                  "bg-white text-slate-700 border-slate-300 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-700"
                 }`}>
                   {apt.status}
                 </span>

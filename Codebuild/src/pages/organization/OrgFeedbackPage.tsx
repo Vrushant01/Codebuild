@@ -44,11 +44,11 @@ export default function OrgFeedbackPage() {
 
   const averageRating = reviews.length > 0
     ? (reviews.reduce((acc, r) => acc + (r.organizationRating || 5), 0) / reviews.length).toFixed(1)
-    : "4.8"
+    : "0.0"
 
   const distribution = [5, 4, 3, 2, 1].map(star => {
     const count = reviews.filter(r => Math.round(r.organizationRating || 5) === star).length
-    const pct = reviews.length > 0 ? Math.round((count / reviews.length) * 100) : star === 5 ? 80 : star === 4 ? 20 : 0
+    const pct = reviews.length > 0 ? Math.round((count / reviews.length) * 100) : 0
     return { star, count, pct }
   })
 

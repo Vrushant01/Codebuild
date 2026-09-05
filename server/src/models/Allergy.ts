@@ -5,6 +5,7 @@ export interface IAllergy extends Document {
   patientUserId: mongoose.Types.ObjectId
   allergyName: string
   reactionDescription: string
+  category?: string
   severity: "mild" | "moderate" | "severe"
   diagnosedDate?: string
   notes?: string
@@ -18,6 +19,7 @@ const AllergySchema = new Schema<IAllergy>(
     patientUserId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
     allergyName: { type: String, required: true },
     reactionDescription: { type: String, required: true },
+    category: { type: String, default: "Medication" },
     severity: { type: String, enum: ["mild", "moderate", "severe"], default: "moderate" },
     diagnosedDate: { type: String },
     notes: { type: String }

@@ -20,11 +20,24 @@ dotenv.config()
 
 export const syncOrganizationUsers = async () => {
   try {
-    const unlinkedOrgs = await Organization.find({ $or: [{ userId: { $exists: false } }, { userId: null }] })
-    if (unlinkedOrgs.length === 0) return
-
     const salt = await bcrypt.genSalt(10)
     const commonPasswordHash = await bcrypt.hash("password123", salt)
+
+    // Ensure Admin User
+    let admin = await User.findOne({ email: "admin@medireach.demo" })
+    if (!admin) {
+      admin = await User.create({
+        name: "Medireach Admin",
+        email: "admin@medireach.demo",
+        phone: "9999999999",
+        passwordHash: commonPasswordHash,
+        role: "ADMIN",
+        accountStatus: "active"
+      })
+    }
+
+    const unlinkedOrgs = await Organization.find({ $or: [{ userId: { $exists: false } }, { userId: null }] })
+    if (unlinkedOrgs.length === 0) return
 
     for (const org of unlinkedOrgs) {
       const email = org.contact?.email ? org.contact.email.toLowerCase().trim() : `org_${org._id.toString().substring(0, 6)}@medireach.demo`
@@ -36,7 +49,7 @@ export const syncOrganizationUsers = async () => {
           phone: org.contact?.phone || "9876543210",
           passwordHash: commonPasswordHash,
           role: "ORGANIZATION",
-          accountStatus: "active"
+          accountStatus: org.listingStatus === "PENDING" ? "pending" : "active"
         })
       }
       org.userId = user._id

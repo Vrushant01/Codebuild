@@ -7,6 +7,7 @@ import { DiscoverySection } from "@/components/landing/DiscoverySection"
 import { AppointmentSection } from "@/components/landing/AppointmentSection"
 import { FeatureGrid } from "@/components/landing/FeatureGrid"
 import { EcosystemSection } from "@/components/landing/EcosystemSection"
+import { JoinOrganizationSection } from "@/components/landing/JoinOrganizationSection"
 import { FinalCtaSection } from "@/components/landing/FinalCtaSection"
 import { LandingFooter } from "@/components/landing/LandingFooter"
 
@@ -25,6 +26,7 @@ export default function LandingPage() {
         <CoreJourney />
         <AIAssistantSection />
         <DiscoverySection />
+        <JoinOrganizationSection />
         <AppointmentSection />
         <EcosystemSection />
         <FeatureGrid />

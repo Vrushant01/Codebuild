@@ -71,9 +71,10 @@ class ProfileService {
         return res.data.map(a => ({
           id: a.id || a._id,
           name: a.allergyName,
-          category: "Medication",
+          category: a.category || "Medication",
+          severity: a.severity || "moderate",
           reaction: a.reactionDescription,
-          dateAdded: a.diagnosedDate || new Date(a.createdAt).toISOString().split("T")[0]
+          dateAdded: a.diagnosedDate || (a.createdAt ? new Date(a.createdAt).toISOString().split("T")[0] : new Date().toISOString().split("T")[0])
         }))
       }
     } catch {}
@@ -86,14 +87,16 @@ class ProfileService {
       const res = await apiClient.post<{ success: boolean; data: any }>("/allergies", {
         allergyName: allergy.name,
         reactionDescription: allergy.reaction,
-        severity: "moderate"
+        category: allergy.category || "Medication",
+        severity: (allergy as any).severity || "moderate"
       })
       if (res && res.data) {
         const a = res.data
         return {
           id: a.id || a._id,
           name: a.allergyName,
-          category: "Medication",
+          category: a.category || "Medication",
+          severity: a.severity || "moderate",
           reaction: a.reactionDescription,
           dateAdded: a.diagnosedDate || new Date().toISOString().split("T")[0]
         }
@@ -164,13 +167,24 @@ class ProfileService {
   }
 
   async updateAllergy(id: string, updates: Partial<Allergy>): Promise<void> {
-    // Allergy updates if needed
+    try {
+      await apiClient.put(`/allergies/${id}`, {
+        allergyName: updates.name,
+        reactionDescription: updates.reaction,
+        category: updates.category,
+        severity: (updates as any).severity || "moderate"
+      })
+    } catch (err) {
+      console.error("Error updating allergy:", err)
+    }
   }
 
   async removeAllergy(id: string): Promise<void> {
     try {
       await apiClient.delete(`/allergies/${id}`)
-    } catch {}
+    } catch (err) {
+      console.error("Error deleting allergy:", err)
+    }
   }
 
   async getPreferences(): Promise<ProfilePreferences> {

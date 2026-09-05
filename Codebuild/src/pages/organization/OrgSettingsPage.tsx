@@ -96,21 +96,21 @@ export default function OrgSettingsPage() {
           <Lock className="w-5 h-5 text-emerald-500" /> Privacy & Security Boundaries
         </h2>
         
-        <div className="bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900 rounded-2xl p-5 mb-6">
-          <div className="flex gap-3 text-emerald-700 dark:text-emerald-400">
-            <ShieldAlert className="w-5 h-5 shrink-0 mt-0.5" />
+        <div className="bg-white dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-700/50 rounded-2xl p-5 mb-6 shadow-xs">
+          <div className="flex gap-3 text-emerald-800 dark:text-emerald-300">
+            <ShieldAlert className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
             <div className="text-sm">
               <p className="font-bold mb-1">Patient Medical Information is Protected</p>
-              <p>Your organization's dashboard enforces strict data boundaries. Receptionists and administrative staff cannot access patient diagnoses, clinical notes, allergies, or prescriptions. Clinical data is strictly isolated to the patient-doctor relationship.</p>
+              <p className="text-muted-foreground">Your organization's dashboard enforces strict data boundaries. Receptionists and administrative staff cannot access patient diagnoses, clinical notes, allergies, or prescriptions. Clinical data is strictly isolated to the patient-doctor relationship.</p>
             </div>
           </div>
         </div>
 
         <div className="space-y-4">
-          <div className="p-4 bg-muted/50 border rounded-2xl border-dashed">
+          <div className="p-4 bg-muted/40 border rounded-2xl border-dashed">
             <div className="flex justify-between items-center mb-2">
               <span className="font-bold">Role-Based Access Control</span>
-              <span className="text-xs font-bold uppercase tracking-wider bg-primary/10 text-primary px-2 py-0.5 rounded-full">Active</span>
+              <span className="text-[11px] font-bold uppercase tracking-wider bg-white text-emerald-700 border border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-700 px-2.5 py-0.5 rounded-full shadow-xs">✓ Active</span>
             </div>
             <p className="text-sm text-muted-foreground">Staff permissions are automatically enforced based on assigned roles (Admin, Doctor, Receptionist).</p>
           </div>

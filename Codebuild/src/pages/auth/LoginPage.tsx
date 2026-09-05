@@ -18,6 +18,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [isUnregistered, setIsUnregistered] = useState(false)
+  const [isPendingApproval, setIsPendingApproval] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { login } = useAuth()
   const navigate = useNavigate()
@@ -26,6 +27,7 @@ export default function LoginPage() {
     e.preventDefault()
     setError("")
     setIsUnregistered(false)
+    setIsPendingApproval(false)
     setIsSubmitting(true)
 
     try {
@@ -47,13 +49,17 @@ export default function LoginPage() {
       }
     } catch (err: any) {
       const rawMsg = err.message || ""
+      const isPending = rawMsg.toLowerCase().includes("pending") || rawMsg.toLowerCase().includes("under review") || err.pendingApproval
       const isNotFound = rawMsg.toLowerCase().includes("no account") || 
                          rawMsg.toLowerCase().includes("not found") || 
                          rawMsg.toLowerCase().includes("sign up") ||
                          rawMsg.toLowerCase().includes("register") ||
                          err.status === 404
 
-      if (isNotFound) {
+      if (isPending) {
+        setIsPendingApproval(true)
+        setError(rawMsg || "Your organization registration request is currently under review by Admin. You will be able to log in once accepted.")
+      } else if (isNotFound) {
         setIsUnregistered(true)
         setError(rawMsg || `No account found for "${identifier}". Please create an account or sign up first.`)
       } else if (rawMsg.toLowerCase().includes("password")) {
@@ -158,10 +164,21 @@ export default function LoginPage() {
 
           {/* User-Friendly Error Feedback Banner */}
           {error && (
-            <div className="p-4 text-sm text-destructive bg-destructive/10 rounded-2xl border border-destructive/20 space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-200">
+            <div className={`p-4 text-sm rounded-2xl border space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-200 ${
+              isPendingApproval
+                ? "bg-amber-500/10 border-amber-500/30 text-amber-800 dark:text-amber-200"
+                : "bg-destructive/10 border-destructive/20 text-destructive"
+            }`}>
               <div className="flex items-start gap-2.5">
-                <AlertCircle className="w-5 h-5 mt-0.5 shrink-0 text-destructive" />
-                <span className="leading-snug">{error}</span>
+                <AlertCircle className={`w-5 h-5 mt-0.5 shrink-0 ${isPendingApproval ? "text-amber-600 dark:text-amber-400" : "text-destructive"}`} />
+                <div className="space-y-1">
+                  <span className="leading-snug font-medium">{error}</span>
+                  {isPendingApproval && (
+                    <p className="text-xs text-muted-foreground pt-1">
+                      Our Admin team verifies all healthcare organizations to ensure platform safety. You will be able to sign in as soon as your facility is accepted.
+                    </p>
+                  )}
+                </div>
               </div>
               
               {isUnregistered && (

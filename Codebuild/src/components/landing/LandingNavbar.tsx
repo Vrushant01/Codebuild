@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
-import { Menu, X, Globe } from "lucide-react"
+import { Menu, X, Globe, Building2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -24,7 +24,7 @@ export function LandingNavbar() {
   ]
 
   return (
-    <nav 
+    <nav
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b border-transparent",
         isScrolled ? "bg-background/95 backdrop-blur-md border-border shadow-sm py-3" : "bg-transparent py-5"
@@ -34,7 +34,7 @@ export function LandingNavbar() {
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 z-50">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-heading font-bold text-xl">+</span>
+            <span className="text-primary-foreground font-heading font-bold text-xl">M</span>
           </div>
           <span className="font-heading font-bold text-xl tracking-tight text-foreground">
             MEDIREACH
@@ -42,11 +42,11 @@ export function LandingNavbar() {
         </Link>
 
         {/* Desktop Nav */}
-        <div className="hidden md:flex items-center gap-8">
+        <div className="hidden md:flex items-center gap-6">
           <div className="flex items-center gap-6">
             {navLinks.map((link) => (
-              <a 
-                key={link.title} 
+              <a
+                key={link.title}
                 href={link.href}
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
@@ -54,16 +54,19 @@ export function LandingNavbar() {
               </a>
             ))}
           </div>
-          
-          <div className="flex items-center gap-4 border-l pl-6 border-border">
-            <Button variant="ghost" size="icon" className="rounded-full" title="Switch Language">
-              <Globe className="w-4 h-4" />
-            </Button>
+
+          <div className="flex items-center gap-3 border-l pl-5 border-border">
             <Button variant="ghost" asChild>
               <Link to="/login">Log in</Link>
             </Button>
-            <Button className="rounded-full px-6 shadow-sm soft-shadow hover:shadow-md transition-shadow" asChild>
+            <Button className="rounded-full px-5 shadow-sm soft-shadow hover:shadow-md transition-shadow font-semibold" asChild>
               <Link to="/register">Get Started</Link>
+            </Button>
+            <Button variant="outline" className="rounded-full px-4 text-xs font-bold border-primary/30 text-primary hover:bg-primary/10 gap-1.5 transition-colors shadow-xs" asChild>
+              <Link to="/join-organization">
+                <Building2 className="w-3.5 h-3.5" />
+                Join as Organization
+              </Link>
             </Button>
           </div>
         </div>
@@ -80,8 +83,8 @@ export function LandingNavbar() {
           <div className="absolute top-0 left-0 right-0 h-screen bg-background border-b z-40 p-6 pt-24 flex flex-col gap-6 md:hidden">
             <div className="flex flex-col gap-4">
               {navLinks.map((link) => (
-                <a 
-                  key={link.title} 
+                <a
+                  key={link.title}
                   href={link.href}
                   onClick={() => setMobileMenuOpen(false)}
                   className="text-lg font-medium text-foreground py-2 border-b border-border/50"
@@ -96,6 +99,12 @@ export function LandingNavbar() {
               </Button>
               <Button className="w-full justify-center" asChild>
                 <Link to="/register">Get Started</Link>
+              </Button>
+              <Button variant="secondary" className="w-full justify-center gap-2 font-bold text-primary border border-primary/20" asChild>
+                <Link to="/join-organization">
+                  <Building2 className="w-4 h-4" />
+                  Join as Organization
+                </Link>
               </Button>
             </div>
           </div>

@@ -89,10 +89,12 @@ export default function AdminListingsPage() {
               </div>
               
               <div className="flex sm:flex-col items-center sm:items-end gap-3 justify-between sm:justify-start">
-                <span className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-md flex items-center gap-1.5 ${
-                  listing.visibility === 'VISIBLE' ? 'bg-emerald-100 text-emerald-700' : 'bg-muted text-muted-foreground'
+                <span className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-full border shadow-xs flex items-center gap-1.5 ${
+                  listing.visibility === 'VISIBLE' 
+                    ? 'bg-white text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-700' 
+                    : 'bg-white text-slate-600 border-slate-300 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-700'
                 }`}>
-                  {listing.visibility === 'VISIBLE' ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                  {listing.visibility === 'VISIBLE' ? <Eye className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <EyeOff className="w-3.5 h-3.5" />}
                   {listing.visibility}
                 </span>
                 

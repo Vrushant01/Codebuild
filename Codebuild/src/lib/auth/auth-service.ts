@@ -65,6 +65,31 @@ export const authService = {
     }
   },
 
+  async registerOrganization(data: any): Promise<{ success: boolean; pendingApproval?: boolean; message?: string; user?: User; organization: any }> {
+    try {
+      const res = await apiClient.post<{ success: boolean; token?: string; pendingApproval?: boolean; message?: string; user?: any; data?: any }>("/organizations/register", data)
+
+      if (!res.pendingApproval) {
+        if (res.token) {
+          localStorage.setItem("token", res.token)
+        }
+        if (res.user) {
+          localStorage.setItem("currentUser", JSON.stringify(res.user))
+        }
+      }
+      
+      return {
+        success: res.success ?? true,
+        pendingApproval: res.pendingApproval ?? false,
+        message: res.message || "Registration request submitted.",
+        user: res.user,
+        organization: res.data
+      }
+    } catch (err: any) {
+      throw new Error(err.message || "Organization registration failed")
+    }
+  },
+
   async logout(): Promise<void> {
     try {
       await apiClient.post("/auth/logout")

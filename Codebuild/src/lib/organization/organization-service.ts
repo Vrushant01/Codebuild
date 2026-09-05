@@ -16,39 +16,51 @@ class OrganizationService {
           city: org.city,
           latitude: org.location?.lat || 23.0225,
           longitude: org.location?.lng || 72.5714,
-          rating: org.rating || 4.8,
+          rating: org.rating || 5.0,
           reviewCount: org.reviewCount || 0,
-          specializations: org.specializations || ["General Medicine"],
+          specializations: org.specializations || [],
           doctorIds: org.doctors ? org.doctors.map((d: any) => d.id || d._id) : [],
           organizationId: `ORG-${(org.id || org._id).substring(0, 6).toUpperCase()}`,
-          email: typeof org.contact === 'object' ? org.contact?.email : org.email || "care@hospital.example.com",
-          contact: typeof org.contact === 'object' ? org.contact?.phone : org.contact || "+91 79 2630 1100",
-          verificationStatus: "Verified"
+          email: typeof org.contact === 'object' ? org.contact?.email : org.email || "",
+          contact: typeof org.contact === 'object' ? org.contact?.phone : org.contact || "",
+          verificationStatus: org.listingStatus === "ACTIVE" || org.listingStatus === "APPROVED" ? "Verified" : "Pending Approval"
         }
       }
     } catch (err) {}
 
-    return {
-      id: "org_1",
-      name: "Ahmedabad Multi-Specialty Hospital",
-      type: "Hospital",
-      address: "12 University Road, Navrangpura",
-      city: "Ahmedabad",
-      latitude: 23.0374,
-      longitude: 72.5522,
-      rating: 4.9,
-      reviewCount: 42,
-      specializations: ["Cardiology", "General Medicine", "Orthopedics"],
-      doctorIds: [],
-      organizationId: "ORG-AMD001",
-      email: "info@ahmedabadhospital.org",
-      contact: "+91 79 2630 1100",
-      verificationStatus: "Verified"
+    // If local user has organization data
+    const userStr = localStorage.getItem("currentUser")
+    if (userStr) {
+      try {
+        const u = JSON.parse(userStr)
+        if (u.organizationId) {
+          return {
+            id: u.organizationId,
+            name: u.organizationName || u.name || "My Organization",
+            type: "Hospital",
+            address: "Main Campus",
+            city: "City",
+            latitude: 21.18,
+            longitude: 72.84,
+            rating: 5.0,
+            reviewCount: 0,
+            specializations: [],
+            doctorIds: [],
+            organizationId: `ORG-${String(u.organizationId).substring(0, 6).toUpperCase()}`,
+            email: u.email || "",
+            contact: u.phone || "",
+            verificationStatus: "Verified"
+          }
+        }
+      } catch {}
     }
+
+    return null
   }
 
   async updateOrganization(data: any): Promise<void> {
     const org = await this.getOrganization()
+    if (!org || !org.id) return
     await apiClient.put(`/organizations/${org.id}`, {
       name: data.name,
       type: data.type,
@@ -67,61 +79,71 @@ class OrganizationService {
   async getDashboardStats(): Promise<OrganizationStats> {
     try {
       const org = await this.getOrganization()
+      if (!org || !org.id) {
+        return {
+          todayAppointments: 0,
+          doctors: 0,
+          receptionists: 0,
+          services: 0,
+          upcomingAppointments: 0
+        }
+      }
       const res = await apiClient.get<{ success: boolean; data: any }>(`/organizations/${org.id}/stats`)
       if (res && res.data) {
         return {
-          todayAppointments: res.data.todayAppointments || 5,
-          doctors: res.data.totalDoctors || 4,
-          receptionists: res.data.totalReceptionists || 1,
-          services: 6,
-          upcomingAppointments: res.data.pendingAppointments || 3
+          todayAppointments: res.data.todayAppointments ?? 0,
+          doctors: res.data.totalDoctors ?? 0,
+          receptionists: res.data.totalReceptionists ?? 0,
+          services: res.data.totalServices ?? 0,
+          upcomingAppointments: res.data.pendingAppointments ?? 0
         }
       }
     } catch (err) {}
 
     return {
-      todayAppointments: 5,
-      doctors: 4,
-      receptionists: 1,
-      services: 6,
-      upcomingAppointments: 3
+      todayAppointments: 0,
+      doctors: 0,
+      receptionists: 0,
+      services: 0,
+      upcomingAppointments: 0
     }
   }
 
   async getDoctors(): Promise<OrganizationDoctor[]> {
     try {
       const org = await this.getOrganization()
-      const res = await apiClient.get<{ success: boolean; data: any[] }>(`/organizations/${org.id}/doctors`)
-      if (res && res.data && res.data.length > 0) {
-        return res.data.map(doc => ({
+      if (org && org.id) {
+        const res = await apiClient.get<{ success: boolean; data: any[] }>(`/organizations/${org.id}/doctors`)
+        if (res && res.data && Array.isArray(res.data) && res.data.length > 0) {
+          return res.data.map(doc => ({
+            id: doc.id || doc._id,
+            organizationId: org.id,
+            name: doc.name,
+            specialization: doc.specialization,
+            rating: doc.rating || 5.0,
+            reviewCount: doc.reviewCount || 0,
+            experience: doc.experienceYears || doc.experience || 5,
+            qualifications: doc.qualifications || ["MBBS"],
+            consultationTypes: doc.telemedicineAvailable ? ["Physical", "Online"] : ["Physical"],
+            availability: { status: "available", nextAvailable: "Today", availableSlots: 5 },
+            reviewIds: [],
+            image: doc.avatar || "",
+            status: doc.active !== false ? "Active" : "Suspended"
+          }))
+        }
+      }
+
+      // Fallback: fetch active doctors from /doctors
+      const docRes = await apiClient.get<{ success: boolean; data: any[] }>("/doctors")
+      if (docRes && docRes.data && Array.isArray(docRes.data) && docRes.data.length > 0) {
+        return docRes.data.map(doc => ({
           id: doc.id || doc._id,
-          organizationId: org.id,
+          organizationId: doc.organizationId || "org_default",
           name: doc.name,
           specialization: doc.specialization,
-          rating: doc.rating || 4.8,
+          rating: doc.rating || 5.0,
           reviewCount: doc.reviewCount || 0,
           experience: doc.experienceYears || doc.experience || 5,
-          qualifications: doc.qualifications || ["MBBS"],
-          consultationTypes: doc.telemedicineAvailable ? ["Physical", "Online"] : ["Physical"],
-          availability: { status: "available", nextAvailable: "Today", availableSlots: 5 },
-          reviewIds: [],
-          image: doc.avatar || "",
-          status: doc.active !== false ? "Active" : "Suspended"
-        }))
-      }
-    } catch {}
-
-    try {
-      const res = await apiClient.get<{ success: boolean; data: any[] }>("/doctors")
-      if (res && res.data) {
-        return res.data.map(doc => ({
-          id: doc.id || doc._id,
-          organizationId: doc.organization?.id || "org_1",
-          name: doc.name,
-          specialization: doc.specialization,
-          rating: doc.rating || 4.8,
-          reviewCount: doc.reviewCount || 10,
-          experience: doc.experienceYears || 5,
           qualifications: doc.qualifications || ["MBBS"],
           consultationTypes: doc.telemedicineAvailable ? ["Physical", "Online"] : ["Physical"],
           availability: { status: "available", nextAvailable: "Today", availableSlots: 5 },
@@ -137,6 +159,7 @@ class OrganizationService {
 
   async addDoctor(data: any): Promise<void> {
     const org = await this.getOrganization()
+    if (!org || !org.id) return
     await apiClient.post(`/organizations/${org.id}/doctors`, {
       name: data.name,
       specialization: data.specialization,
@@ -152,25 +175,28 @@ class OrganizationService {
 
   async updateDoctor(id: string, data: any): Promise<void> {
     const org = await this.getOrganization()
+    if (!org || !org.id) return
     await apiClient.put(`/organizations/${org.id}/doctors/${id}`, data)
   }
 
   async removeDoctorAssociation(id: string): Promise<void> {
     const org = await this.getOrganization()
+    if (!org || !org.id) return
     await apiClient.delete(`/organizations/${org.id}/doctors/${id}`)
   }
 
   async getReceptionists(): Promise<Receptionist[]> {
     try {
       const org = await this.getOrganization()
+      if (!org || !org.id) return []
       const res = await apiClient.get<{ success: boolean; data: any[] }>(`/organizations/${org.id}/receptionists`)
-      if (res && res.data && res.data.length > 0) {
+      if (res && res.data && Array.isArray(res.data)) {
         return res.data.map(r => ({
           id: r.id || r._id,
           organizationId: org.id,
           name: r.name,
           email: r.email,
-          mobile: r.phone || "+91 98765 43210",
+          mobile: r.phone || "",
           status: (r.status === "active" ? "Active" : "Suspended") as StaffStatus,
           permissions: {
             appointmentManagement: r.permissions?.manageAppointments ?? true,
@@ -187,6 +213,7 @@ class OrganizationService {
 
   async addReceptionist(data: any): Promise<void> {
     const org = await this.getOrganization()
+    if (!org || !org.id) return
     await apiClient.post(`/organizations/${org.id}/receptionists`, {
       name: data.name,
       email: data.email,
@@ -200,24 +227,28 @@ class OrganizationService {
 
   async updateReceptionist(id: string, data: any): Promise<void> {
     const org = await this.getOrganization()
+    if (!org || !org.id) return
     await apiClient.put(`/organizations/${org.id}/receptionists/${id}`, data)
   }
 
   async removeReceptionist(id: string): Promise<void> {
     const org = await this.getOrganization()
+    if (!org || !org.id) return
     await apiClient.delete(`/organizations/${org.id}/receptionists/${id}`)
   }
 
   async suspendReceptionist(id: string): Promise<void> {
     const org = await this.getOrganization()
+    if (!org || !org.id) return
     await apiClient.put(`/organizations/${org.id}/receptionists/${id}`, { status: "inactive" })
   }
 
   async getServices(): Promise<HealthcareService[]> {
     try {
       const org = await this.getOrganization()
+      if (!org || !org.id) return []
       const res = await apiClient.get<{ success: boolean; data: any[] }>(`/organizations/${org.id}/services`)
-      if (res && res.data && res.data.length > 0) {
+      if (res && res.data && Array.isArray(res.data)) {
         return res.data.map(s => ({
           id: s.id || s._id,
           organizationId: org.id,
@@ -229,14 +260,12 @@ class OrganizationService {
       }
     } catch (err) {}
 
-    return [
-      { id: "srv_1", organizationId: "org_1", name: "Cardiac ECG & TMT Testing", description: "Standard diagnostic cardiac assessment", status: "Active", doctorIds: ["doc_1"] },
-      { id: "srv_2", organizationId: "org_1", name: "General Health Checkup", description: "Comprehensive outpatient screening", status: "Active", doctorIds: ["doc_1"] }
-    ]
+    return []
   }
 
   async addService(data: any): Promise<void> {
     const org = await this.getOrganization()
+    if (!org || !org.id) return
     await apiClient.post(`/organizations/${org.id}/services`, {
       name: data.name,
       description: data.description,
@@ -248,25 +277,28 @@ class OrganizationService {
 
   async updateService(id: string, data: Partial<HealthcareService>): Promise<void> {
     const org = await this.getOrganization()
+    if (!org || !org.id) return
     await apiClient.put(`/organizations/${org.id}/services/${id}`, data)
   }
 
   async disableService(id: string): Promise<void> {
     const org = await this.getOrganization()
+    if (!org || !org.id) return
     await apiClient.patch(`/organizations/${org.id}/services/${id}/toggle`, {})
   }
 
   async getAppointments(): Promise<OrganizationAppointment[]> {
     try {
       const org = await this.getOrganization()
+      if (!org || !org.id) return []
       const res = await apiClient.get<{ success: boolean; data: any[] }>(`/organizations/${org.id}/appointments`)
-      if (res && res.data && res.data.length > 0) {
+      if (res && res.data && Array.isArray(res.data)) {
         return res.data.map(apt => ({
           id: apt.id || apt._id,
           patientId: apt.patientId || apt.patientUserId || "patient",
           patientName: apt.patientName || "Patient",
-          doctor: apt.doctor || { id: "doc_1", name: "Doctor", specialization: "General", organizationId: org.id, rating: 4.8, reviewCount: 0, experience: 5, qualifications: ["MBBS"], consultationTypes: ["Physical"], availability: { status: "available", nextAvailable: "Today", availableSlots: 5 }, reviewIds: [] },
-          organization: apt.organization || { id: org.id, name: org.name, type: org.type, address: org.address, city: org.city, latitude: 23.03, longitude: 72.55, rating: 4.8, reviewCount: 10, specializations: ["General"], doctorIds: [], availability: { status: "available", nextAvailable: "Today", availableSlots: 10 }, onlineConsultation: true, workingHours: {}, contact: "" },
+          doctor: apt.doctor || { id: "doc_1", name: "Doctor", specialization: "General", organizationId: org.id, rating: 5.0, reviewCount: 0, experience: 5, qualifications: ["MBBS"], consultationTypes: ["Physical"], availability: { status: "available", nextAvailable: "Today", availableSlots: 5 }, reviewIds: [] },
+          organization: apt.organization || { id: org.id, name: org.name, type: org.type, address: org.address, city: org.city, latitude: org.latitude || 21.18, longitude: org.longitude || 72.84, rating: 5.0, reviewCount: 0, specializations: org.specializations || [], doctorIds: [], availability: { status: "available", nextAvailable: "Today", availableSlots: 10 }, onlineConsultation: true, workingHours: {}, contact: "" },
           date: apt.date,
           timeStr: apt.timeStr || apt.startTime,
           consultationType: apt.consultationType || apt.type || "Physical",
@@ -285,6 +317,14 @@ class OrganizationService {
   async getSettings(): Promise<NotificationSettings> {
     try {
       const org = await this.getOrganization()
+      if (!org || !org.id) {
+        return {
+          appointmentAlerts: true,
+          cancellationAlerts: true,
+          newBookingAlerts: true,
+          staffActivity: false
+        }
+      }
       const res = await apiClient.get<{ success: boolean; data: any }>(`/organizations/${org.id}/settings`)
       if (res && res.data) {
         return {
@@ -306,6 +346,7 @@ class OrganizationService {
 
   async updateSettings(data: Partial<NotificationSettings>): Promise<void> {
     const org = await this.getOrganization()
+    if (!org || !org.id) return
     await apiClient.put(`/organizations/${org.id}/settings`, data)
   }
 }

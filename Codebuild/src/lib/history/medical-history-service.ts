@@ -155,11 +155,11 @@ class MedicalHistoryService {
           id: alg.id || alg._id,
           patientId: "PAT-CURRENT",
           name: alg.allergyName,
-          category: "Medication",
+          category: alg.category || "Medication",
           reaction: alg.reactionDescription,
           severity: (alg.severity === "severe" ? "Severe" : alg.severity === "mild" ? "Mild" : "Moderate") as AllergySeverity,
           previousOccurrence: "Happened before" as PreviousOccurrence,
-          dateAdded: alg.diagnosedDate || new Date(alg.createdAt).toISOString().split("T")[0],
+          dateAdded: alg.diagnosedDate || (alg.createdAt ? new Date(alg.createdAt).toISOString().split("T")[0] : new Date().toISOString().split("T")[0]),
           active: true
         }))
       }
@@ -173,6 +173,7 @@ class MedicalHistoryService {
       await apiClient.post("/allergies", {
         allergyName: allergy.name,
         reactionDescription: allergy.reaction || "Allergic reaction",
+        category: (allergy as any).category || "Medication",
         severity: allergy.severity ? allergy.severity.toLowerCase() : "moderate",
         diagnosedDate: new Date().toISOString().split("T")[0],
         notes: allergy.previousOccurrence
@@ -183,7 +184,16 @@ class MedicalHistoryService {
   }
 
   async updateAllergy(id: string, updates: Partial<Allergy>): Promise<void> {
-    // Backend update if needed
+    try {
+      await apiClient.put(`/allergies/${id}`, {
+        allergyName: updates.name,
+        reactionDescription: updates.reaction,
+        category: (updates as any).category,
+        severity: updates.severity ? updates.severity.toLowerCase() : undefined
+      })
+    } catch (err) {
+      console.warn("⚠️ Error updating allergy:", err)
+    }
   }
 
   async removeAllergy(id: string): Promise<void> {

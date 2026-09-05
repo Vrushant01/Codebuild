@@ -190,10 +190,10 @@ export default function OrgBillingPage() {
             {billing.totalAmountDue === 0 ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <Clock className="w-5 h-5 text-amber-500" />}
           </div>
           <div>
-            <span className={`inline-flex items-center gap-1 text-sm font-bold uppercase tracking-wider px-3 py-1 rounded-xl ${
-              billing.totalAmountDue === 0 ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400" : "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400"
+            <span className={`inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full border shadow-xs ${
+              billing.totalAmountDue === 0 ? "bg-white text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-700" : "bg-white text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-700"
             }`}>
-              {billing.totalAmountDue === 0 ? "Settled (PAID)" : "Due (UNPAID)"}
+              {billing.totalAmountDue === 0 ? "✓ SETTLED (PAID)" : "Due (UNPAID)"}
             </span>
             <p className="text-xs text-muted-foreground mt-1">
               {billing.totalAmountDue === 0 ? "All current dues cleared" : `${billing.unpaidPatients || Math.ceil(billing.totalAmountDue / billing.ratePerPatient)} new patient(s) to settle`}
@@ -222,8 +222,8 @@ export default function OrgBillingPage() {
 
               {/* Settlement Button */}
               {billing.totalAmountDue === 0 ? (
-                <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 px-4 py-2 rounded-2xl text-sm font-bold">
-                  <ShieldCheck className="w-4 h-4" /> All Dues Settled (₹{billing.totalPaidAmount || billing.grossAmount} Paid)
+                <div className="flex items-center gap-2 bg-white text-emerald-700 border border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-700 px-4 py-2 rounded-2xl text-sm font-bold shadow-xs">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> All Dues Settled (₹{billing.totalPaidAmount || billing.grossAmount} Paid)
                 </div>
               ) : (
                 <Button 

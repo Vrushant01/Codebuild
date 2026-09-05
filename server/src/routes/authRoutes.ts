@@ -176,6 +176,37 @@ router.post("/login", async (req: Request, res: Response): Promise<void> => {
       }
     }
 
+    // Organization approval status check
+    if (user.role === "ORGANIZATION") {
+      const org = await Organization.findOne({ $or: [{ userId: user._id }, { "contact.email": user.email }] })
+      if (org) {
+        if (org.listingStatus === "PENDING" || user.accountStatus === "pending") {
+          res.status(403).json({
+            success: false,
+            pendingApproval: true,
+            message: "Your organization registration request is currently under review by Admin. You will be able to log in once accepted."
+          })
+          return
+        }
+        if (org.listingStatus === "REJECTED" || user.accountStatus === "inactive") {
+          res.status(403).json({
+            success: false,
+            rejected: true,
+            message: "Your organization registration request was rejected by Admin. Please contact support."
+          })
+          return
+        }
+        if (org.listingStatus === "SUSPENDED" || user.accountStatus === "suspended") {
+          res.status(403).json({
+            success: false,
+            suspended: true,
+            message: "Your organization account is suspended. Please contact Admin support."
+          })
+          return
+        }
+      }
+    }
+
     // Extra role metadata
     let extra: any = {}
     if (user.role === "PATIENT") {

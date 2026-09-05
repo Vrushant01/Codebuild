@@ -212,12 +212,12 @@ export default function AdminSubscriptionsPage() {
                         )}
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-xl text-[11px] font-bold uppercase tracking-wider ${
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider border shadow-xs ${
                           isPaid 
-                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400" 
-                            : "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400"
+                            ? "bg-white text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-700" 
+                            : "bg-white text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-700"
                         }`}>
-                          {isPaid ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Clock className="w-3.5 h-3.5" />}
+                          {isPaid ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />}
                           {isPaid ? "PAID" : `DUE (₹${org.outstandingDue ?? org.totalAmount})`}
                         </span>
                       </td>

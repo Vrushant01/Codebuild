@@ -9,6 +9,7 @@ import { Toaster } from "react-hot-toast"
 import { AuthProvider, useAuth } from "./lib/auth/AuthContext"
 import LoginPage from "./pages/auth/LoginPage"
 import RegisterPage from "./pages/auth/RegisterPage"
+import JoinOrganizationPage from "./pages/auth/JoinOrganizationPage"
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage"
 import ResetPasswordPage from "./pages/auth/ResetPasswordPage"
 import VerifyAccountPage from "./pages/auth/VerifyAccountPage"
@@ -163,9 +164,11 @@ export default function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/design-system" element={<DesignSystem />} />
             
-            {/* Auth Routes */}
+            {/* Auth & Registration Routes */}
             <Route path="/login" element={<AuthRoute><LoginPage /></AuthRoute>} />
             <Route path="/register" element={<AuthRoute><RegisterPage /></AuthRoute>} />
+            <Route path="/join-organization" element={<AuthRoute><JoinOrganizationPage /></AuthRoute>} />
+            <Route path="/register/organization" element={<AuthRoute><JoinOrganizationPage /></AuthRoute>} />
             <Route path="/forgot-password" element={<AuthRoute><ForgotPasswordPage /></AuthRoute>} />
             <Route path="/reset-password" element={<AuthRoute><ResetPasswordPage /></AuthRoute>} />
             <Route path="/verify-account" element={<AuthRoute><VerifyAccountPage /></AuthRoute>} />

@@ -42,12 +42,12 @@ export function OrganizationIdentityCard({ organization }: OrganizationIdentityC
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
             <h2 className="text-2xl sm:text-3xl font-heading font-bold">{organization.name}</h2>
             {organization.verificationStatus === "Verified" && (
-              <span className="flex items-center justify-center gap-1 text-xs font-bold uppercase tracking-wider bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full w-fit mx-auto sm:mx-0">
-                <ShieldCheck className="w-3.5 h-3.5" /> Verified
+              <span className="flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-wider bg-white text-emerald-700 border border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-700 px-3 py-0.5 rounded-full w-fit mx-auto sm:mx-0 shadow-xs">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> Verified
               </span>
             )}
             {organization.verificationStatus === "Pending" && (
-              <span className="flex items-center justify-center gap-1 text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full w-fit mx-auto sm:mx-0">
+              <span className="flex items-center justify-center gap-1.5 text-xs font-bold uppercase tracking-wider bg-white text-amber-700 border border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-700 px-3 py-0.5 rounded-full w-fit mx-auto sm:mx-0 shadow-xs">
                 Pending Verification
               </span>
             )}

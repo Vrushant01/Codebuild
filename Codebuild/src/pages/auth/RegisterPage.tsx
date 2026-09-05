@@ -96,6 +96,16 @@ export default function RegisterPage() {
       title="Create your Medireach account"
       subtitle="One account for your healthcare journey."
     >
+      {/* Organization Join Callout */}
+      <div className="mb-6 p-3 bg-emerald-500/10 border border-emerald-500/25 rounded-2xl flex items-center justify-between text-xs">
+        <span className="font-semibold text-emerald-700 dark:text-emerald-300">
+          🏥 Registering a clinic or hospital?
+        </span>
+        <Link to="/join-organization" className="font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1">
+          Join as Organization →
+        </Link>
+      </div>
+
       <Tabs value={authMethod} onValueChange={(v) => {
         setAuthMethod(v as "email" | "mobile")
         setError("")

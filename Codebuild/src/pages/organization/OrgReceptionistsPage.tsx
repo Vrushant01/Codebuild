@@ -97,8 +97,10 @@ export default function OrgReceptionistsPage() {
                 <div>
                   <h4 className="font-bold text-lg leading-tight">{person.name}</h4>
                   <p className="text-sm text-muted-foreground mb-2">{person.email}</p>
-                  <span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${
-                    person.status === "Active" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                  <span className={`inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border shadow-xs ${
+                    person.status === "Active" 
+                      ? "bg-white text-emerald-700 border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-700" 
+                      : "bg-white text-amber-700 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-700"
                   }`}>
                     {person.status}
                   </span>

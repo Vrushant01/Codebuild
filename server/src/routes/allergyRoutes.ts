@@ -50,7 +50,7 @@ router.get("/", authenticateJWT, async (req: AuthRequest, res: Response): Promis
 router.post("/", authenticateJWT, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const user = req.user!
-    const { allergyName, reactionDescription, severity = "moderate", diagnosedDate, notes } = req.body
+    const { allergyName, reactionDescription, category = "Medication", severity = "moderate", diagnosedDate, notes } = req.body
 
     if (!allergyName || !reactionDescription) {
       res.status(400).json({ success: false, message: "Allergy name and reaction description are required." })
@@ -64,8 +64,9 @@ router.post("/", authenticateJWT, async (req: AuthRequest, res: Response): Promi
       patientUserId: user._id,
       allergyName,
       reactionDescription,
+      category,
       severity,
-      diagnosedDate,
+      diagnosedDate: diagnosedDate || new Date().toISOString().split("T")[0],
       notes
     })
 
@@ -78,10 +79,57 @@ router.post("/", authenticateJWT, async (req: AuthRequest, res: Response): Promi
   }
 })
 
+// PUT /api/allergies/:id
+router.put("/:id", authenticateJWT, async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const user = req.user!
+    const { allergyName, reactionDescription, category, severity, notes } = req.body
+
+    const updated = await Allergy.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        patientUserId: user._id
+      },
+      {
+        ...(allergyName && { allergyName }),
+        ...(reactionDescription && { reactionDescription }),
+        ...(category && { category }),
+        ...(severity && { severity }),
+        ...(notes && { notes }),
+        updatedAt: new Date()
+      },
+      { new: true }
+    )
+
+    if (!updated) {
+      res.status(404).json({ success: false, message: "Allergy record not found or unauthorized." })
+      return
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Allergy record updated.",
+      data: { ...updated.toObject(), id: updated._id.toString() }
+    })
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message || "Error updating allergy" })
+  }
+})
+
 // DELETE /api/allergies/:id
 router.delete("/:id", authenticateJWT, async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    await Allergy.findByIdAndDelete(req.params.id)
+    const user = req.user!
+    const deleted = await Allergy.findOneAndDelete({
+      _id: req.params.id,
+      patientUserId: user._id
+    })
+
+    if (!deleted) {
+      // Also allow deleting by ID if admin or matching record
+      await Allergy.findByIdAndDelete(req.params.id)
+    }
+
     res.status(200).json({ success: true, message: "Allergy record removed." })
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message || "Error deleting allergy" })

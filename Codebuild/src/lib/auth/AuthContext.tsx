@@ -9,6 +9,7 @@ interface AuthContextType {
   accountStatus: AccountStatus | null
   login: typeof authService.login
   register: typeof authService.register
+  registerOrganization: typeof authService.registerOrganization
   verifyOtp: typeof authService.verifyOtp
   forgotPassword: typeof authService.forgotPassword
   resetPassword: typeof authService.resetPassword
@@ -46,6 +47,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return newUser
   }
 
+  const registerOrganization = async (data: any) => {
+    const res = await authService.registerOrganization(data)
+    if (!res.pendingApproval && res.user) {
+      setUser(res.user)
+      setAccountStatus(res.user.status)
+    }
+    return res
+  }
+
   const logout = async () => {
     await authService.logout()
     setUser(null)
@@ -59,6 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     accountStatus,
     login,
     register,
+    registerOrganization,
     verifyOtp: authService.verifyOtp,
     forgotPassword: authService.forgotPassword,
     resetPassword: authService.resetPassword,

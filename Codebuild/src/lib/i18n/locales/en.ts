@@ -168,6 +168,18 @@ export const en = {
     updatedToast: "Allergy updated",
     removedToast: "Allergy removed",
     notProvided: "Allergy information not provided.",
+    categories: {
+      Medication: "Medication",
+      Food: "Food",
+      Environmental: "Environmental",
+      Other: "Other",
+      medication: "Medication",
+      food: "Food",
+      environmental: "Environmental",
+      other: "Other",
+      Drug: "Medication",
+      drug: "Medication"
+    },
     types: {
       food: "Food",
       drug: "Medication",

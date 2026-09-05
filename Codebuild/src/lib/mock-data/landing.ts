@@ -3,57 +3,57 @@ import type { Doctor } from "@/components/healthcare/cards";
 export const mockDoctors: Doctor[] = [
   {
     id: "doc_1",
-    name: "Sarah Chen",
+    name: "Dr. Aarav Patel",
     specialization: "Cardiologist",
-    location: "Metro Heart Institute, NY",
+    location: "Ahmedabad Multi-Specialty Hospital, Ahmedabad",
     rating: 4.9,
-    reviews: 128,
+    reviews: 184,
     availableNext: "Today, 2:00 PM",
-    imageUrl: "https://i.pravatar.cc/150?u=sarah"
+    imageUrl: "/images/doctor_aarav.jpg"
   },
   {
     id: "doc_2",
-    name: "James Wilson",
-    specialization: "General Physician",
-    location: "City Health Clinic",
-    rating: 4.7,
-    reviews: 84,
+    name: "Dr. Hiren Kevadiya",
+    specialization: "Interventional Cardiologist",
+    location: "Kiran Multi Super Speciality Hospital, Surat",
+    rating: 4.9,
+    reviews: 240,
     availableNext: "Tomorrow, 10:00 AM",
-    imageUrl: "https://i.pravatar.cc/150?u=james"
+    imageUrl: "/images/doctor_hiren.jpg"
   },
   {
     id: "doc_3",
-    name: "Priya Sharma",
-    specialization: "Dermatologist",
-    location: "SkinCare Center",
+    name: "Dr. Priya Sharma",
+    specialization: "Dermatologist & Skin Care",
+    location: "Apollo Clinic & Skin Care, Ahmedabad",
     rating: 4.8,
     reviews: 215,
     availableNext: "Today, 4:30 PM",
-    imageUrl: "https://i.pravatar.cc/150?u=priya"
+    imageUrl: "/images/doctor_priya.jpg"
   }
 ];
 
 export const mockReviews = [
   {
     id: "rev_1",
-    author: "M. Thompson",
+    author: "Mitesh Patel",
     rating: 5,
     date: "2 days ago",
-    text: "The AI symptom checker was incredibly accurate. It recommended I see a cardiologist, and I booked Dr. Chen on the same day. Life saver.",
+    text: "The AI symptom checker was incredibly accurate. It recommended I see a cardiologist, and I booked Dr. Aarav Patel on the same day. Life saver.",
     verified: true,
   },
   {
     id: "rev_2",
-    author: "S. Patel",
+    author: "Sanjay Shah",
     rating: 5,
     date: "1 week ago",
-    text: "Finally, an app where I can explain my symptoms in Gujarati. The doctor understood my issue perfectly before I even stepped into the clinic.",
+    text: "Finally, an app where I can explain my symptoms in Gujarati. Dr. Hiren Kevadiya understood my issue perfectly before I even stepped into the clinic.",
     verified: true,
   },
   {
     id: "rev_3",
-    author: "D. Garcia",
-    rating: 4,
+    author: "Deepa Desai",
+    rating: 5,
     date: "3 weeks ago",
     text: "The medicine reminders keep me on track. I used to forget my evening dose, but Medireach pings me right after dinner.",
     verified: true,

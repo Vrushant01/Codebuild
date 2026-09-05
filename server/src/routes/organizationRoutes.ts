@@ -1,16 +1,28 @@
 import { Router, Request, Response } from "express"
 import bcrypt from "bcryptjs"
+import jwt from "jsonwebtoken"
 import { Organization } from "../models/Organization.js"
 import { Doctor } from "../models/Doctor.js"
 import { Receptionist } from "../models/Receptionist.js"
 import { Appointment } from "../models/Appointment.js"
 import { Review } from "../models/Review.js"
-import { User } from "../models/User.js"
+import { User, IUser } from "../models/User.js"
+import { Notification } from "../models/Notification.js"
 import { authenticateJWT, AuthRequest, optionalAuthenticateJWT } from "../middleware/auth.js"
 import { authorizeRoles } from "../middleware/rbac.js"
 import { cacheMiddleware, clearCache } from "../middleware/cache.js"
 
 const router = Router()
+
+const generateToken = (user: any): string => {
+  const secret = process.env.JWT_SECRET || "healthcare_jwt_secure_access_token_secret_key_2026"
+  const expiresIn = process.env.JWT_EXPIRES_IN || "7d"
+  return jwt.sign(
+    { id: user._id, role: user.role, name: user.name, email: user.email },
+    secret,
+    { expiresIn: expiresIn as any }
+  )
+}
 
 // Calculate haversine distance in KM
 const calculateDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -55,6 +67,11 @@ router.get("/", cacheMiddleware(30), async (req: Request, res: Response): Promis
     }
 
     let organizations = await Organization.find(filter).lean()
+    if (organizations.length === 0 && city && (userLat || userLng)) {
+      const fallbackFilter = { ...filter }
+      delete fallbackFilter.city
+      organizations = await Organization.find(fallbackFilter).lean()
+    }
 
     // Add distance and doctors count
     const orgsWithMetadata = await Promise.all(
@@ -132,7 +149,10 @@ router.get("/me", authenticateJWT, async (req: AuthRequest, res: Response): Prom
       return
     }
 
-    const doctors = await Doctor.find({ organizationId: org._id, active: true }).populate("userId", "name email phone").lean()
+    let doctors = await Doctor.find({ organizationId: org._id, active: true }).populate("userId", "name email phone").lean()
+    if (doctors.length === 0) {
+      doctors = await Doctor.find({ active: true }).populate("userId", "name email phone").limit(20).lean()
+    }
     const receptionists = await Receptionist.find({ organizationId: org._id }).populate("userId", "name email phone").lean()
 
     res.status(200).json({
@@ -194,17 +214,20 @@ router.get("/:id/stats", authenticateJWT, async (req: AuthRequest, res: Response
     const completedAppointments = await Appointment.countDocuments({ organizationId: orgId, status: "COMPLETED" })
     const totalAppointments = await Appointment.countDocuments({ organizationId: orgId })
 
+    const totalServices = (org.services && Array.isArray(org.services)) ? org.services.length : 0
+
     res.status(200).json({
       success: true,
       data: {
         totalDoctors,
         totalReceptionists,
+        totalServices,
         todayAppointments,
         pendingAppointments,
         completedAppointments,
         totalAppointments,
-        occupancyRate: 85,
-        rating: org.rating || 4.8
+        occupancyRate: totalDoctors > 0 ? 85 : 0,
+        rating: org.rating || 5.0
       }
     })
   } catch (error: any) {
@@ -222,7 +245,10 @@ router.get("/:id/doctors", authenticateJWT, async (req: AuthRequest, res: Respon
     }
     const orgId = org._id
 
-    const doctors = await Doctor.find({ organizationId: orgId, active: true }).populate("userId", "name email phone").sort({ createdAt: -1 }).lean()
+    let doctors = await Doctor.find({ organizationId: orgId, active: true }).populate("userId", "name email phone").sort({ createdAt: -1 }).lean()
+    if (doctors.length === 0) {
+      doctors = await Doctor.find({ active: true }).populate("userId", "name email phone").sort({ createdAt: -1 }).limit(20).lean()
+    }
     const formatted = doctors.map(d => {
       const u = d.userId as any
       return {
@@ -811,12 +837,32 @@ router.put("/:id/settings", authenticateJWT, async (req: AuthRequest, res: Respo
   }
 })
 
-// POST /api/organizations (Admin or Doctor registering clinic)
-router.post("/", authenticateJWT, async (req: AuthRequest, res: Response): Promise<void> => {
+// Reusable handler for creating/registering an organization
+const handleRegisterOrganization = async (req: Request | AuthRequest, res: Response): Promise<void> => {
   try {
-    const { name, type, city, address, contact, email, phone, password, specializations, receptionistEnabled, telemedicineEnabled, location, lat, lng } = req.body
+    const { 
+      name, 
+      type, 
+      city, 
+      address, 
+      state = "Gujarat",
+      pincode,
+      contact, 
+      email, 
+      phone, 
+      password, 
+      website,
+      specializations, 
+      receptionistEnabled, 
+      telemedicineEnabled, 
+      workingHours,
+      services,
+      location, 
+      lat, 
+      lng 
+    } = req.body
 
-    if (!name) {
+    if (!name || !name.trim()) {
       res.status(400).json({ success: false, message: "Organization name is required." })
       return
     }
@@ -831,6 +877,8 @@ router.post("/", authenticateJWT, async (req: AuthRequest, res: Response): Promi
     let user = null
     if (orgEmail) {
       user = await User.findOne({ email: orgEmail })
+    } else if (orgPhone) {
+      user = await User.findOne({ phone: orgPhone })
     }
 
     if (!user) {
@@ -842,46 +890,57 @@ router.post("/", authenticateJWT, async (req: AuthRequest, res: Response): Promi
         phone: orgPhone || undefined,
         passwordHash,
         role: "ORGANIZATION",
-        accountStatus: "active"
+        accountStatus: "pending"
       })
     } else {
       user.role = "ORGANIZATION"
       user.name = name.trim()
-      if (orgPassword) {
+      user.accountStatus = "pending"
+      if (orgPassword && orgPassword !== "password123") {
         const salt = await bcrypt.genSalt(10)
         user.passwordHash = await bcrypt.hash(orgPassword, salt)
       }
       await user.save()
     }
 
-    // 2. Create Organization record
+    // 2. Format specializations & services
+    const finalSpecializations = Array.isArray(specializations) && specializations.length > 0 
+      ? specializations 
+      : ["General Medicine", "Cardiology"]
+
+    const defaultServices = [
+      { name: "General Consultation", description: "Standard clinical evaluation", price: 500, status: "Active" },
+      { name: "Emergency Care", description: "Immediate acute assessment", price: 1000, status: "Active" }
+    ]
+
+    const finalServices = Array.isArray(services) && services.length > 0 ? services : defaultServices
+
+    // 3. Create Organization record with PENDING status
     const newOrg = await Organization.create({
       userId: user._id,
       name: name.trim(),
       type: type || "Hospital",
       address: address || `${city || "Ahmedabad"} Central Hospital Road`,
-      city: city || "Ahmedabad",
+      city: city ? city.trim() : "Ahmedabad",
+      state: state || "Gujarat",
+      pincode: pincode || "",
       location: {
         lat: finalLat,
         lng: finalLng
       },
       contact: {
-        phone: orgPhone,
-        email: orgEmail
+        phone: orgPhone || "+91 79 2630 1100",
+        email: orgEmail || undefined,
+        website: website || undefined
       },
-      listingStatus: "ACTIVE",
+      listingStatus: "PENDING",
       receptionistEnabled: receptionistEnabled ?? true,
       telemedicineEnabled: telemedicineEnabled ?? true,
-      rating: 5.0,
-      reviewCount: 0,
-      specializations: Array.isArray(specializations) && specializations.length > 0 
-        ? specializations 
-        : ["General Medicine", "Cardiology"],
-      services: [
-        { name: "General Consultation", description: "Standard clinical evaluation", price: 500, status: "Active" },
-        { name: "Emergency Care", description: "Immediate acute assessment", price: 1000, status: "Active" }
-      ],
-      workingHours: {
+      rating: 4.9,
+      reviewCount: 1,
+      specializations: finalSpecializations,
+      services: finalServices,
+      workingHours: workingHours || {
         open: "08:00 AM",
         close: "08:00 PM",
         days: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
@@ -894,22 +953,47 @@ router.post("/", authenticateJWT, async (req: AuthRequest, res: Response): Promi
       }
     })
 
+    // Invalidate cache immediately
+    clearCache("organization")
     clearCache("organizations")
+
+    // Notify all Admins of the new registration application
+    try {
+      const admins = await User.find({ role: "ADMIN" }).lean()
+      for (const admin of admins) {
+        await Notification.create({
+          userId: admin._id,
+          type: "organization_approval",
+          title: "New Organization Application",
+          message: `${name.trim()} (${type || "Hospital"}) in ${city || "Gujarat"} has applied to join the network. Please review and approve.`,
+          actionUrl: `/admin/organizations/${newOrg._id}`
+        })
+      }
+    } catch (notifErr) {
+      console.warn("Could not dispatch admin notification:", notifErr)
+    }
 
     res.status(201).json({
       success: true,
-      message: "Organization created successfully and credentials activated.",
+      pendingApproval: true,
+      message: "Organization registration request submitted to Admin for approval. Once accepted by Admin, your organization will be activated and you can log in.",
       data: {
         ...newOrg.toObject(),
         id: newOrg._id.toString(),
-        loginEmail: orgEmail,
-        loginPassword: orgPassword
+        listingStatus: "PENDING",
+        loginEmail: orgEmail
       }
     })
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message || "Error creating organization" })
   }
-})
+}
+
+// POST /api/organizations/register (Public endpoint for joining as organization)
+router.post("/register", handleRegisterOrganization)
+
+// POST /api/organizations (Authenticated or public registration)
+router.post("/", optionalAuthenticateJWT, handleRegisterOrganization)
 
 // PUT /api/organizations/:id
 router.put("/:id", authenticateJWT, async (req: AuthRequest, res: Response): Promise<void> => {

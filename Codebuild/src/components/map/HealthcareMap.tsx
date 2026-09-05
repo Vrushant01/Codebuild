@@ -15,10 +15,27 @@ interface HealthcareMapProps {
 }
 
 const cityCenters: Record<string, [number, number]> = {
-  "Ahmedabad": [23.0225, 72.5714],
   "Surat": [21.1702, 72.8311],
-  "Rajkot": [22.3039, 70.8022],
+  "Ahmedabad": [23.0225, 72.5714],
   "Vadodara": [22.3072, 73.1812],
+  "Rajkot": [22.3039, 70.8022],
+  "Gandhinagar": [23.2156, 72.6369],
+  "Bhavnagar": [21.7645, 72.1519],
+  "Jamnagar": [22.4707, 70.0577],
+  "Junagadh": [21.5222, 70.4579],
+  "Anand": [22.5645, 72.9289],
+  "Navsari": [20.9500, 72.9300],
+  "Bharuch": [21.7051, 72.9959],
+  "Valsad": [20.5992, 72.9342],
+  "Mehsana": [23.5880, 72.3693],
+  "Bhuj": [23.2420, 69.6669],
+  "Mumbai": [19.0760, 72.8777],
+  "Delhi": [28.6139, 77.2090],
+  "New Delhi": [28.6139, 77.2090],
+  "Pune": [18.5204, 73.8567],
+  "Bengaluru": [12.9716, 77.5946],
+  "Hyderabad": [17.3850, 78.4867],
+  "Jaipur": [26.9124, 75.7873]
 }
 
 // Center Map Component to programmatically change view
@@ -64,13 +81,13 @@ const createCustomIcon = (org: Organization, isSelected: boolean) => {
   const isFull = org.availability.status === "full"
   const isLimited = org.availability.status === "limited"
   
-  let bgColorClass = "bg-background border-primary text-primary"
+  let bgColorClass = "bg-white border-primary text-primary shadow-md"
   if (isSelected) {
-    bgColorClass = "bg-primary border-primary text-primary-foreground"
+    bgColorClass = "bg-primary border-white text-white shadow-xl"
   } else if (isFull) {
-    bgColorClass = "bg-muted border-border text-muted-foreground"
+    bgColorClass = "bg-white border-slate-300 text-slate-500 shadow-sm"
   } else if (isLimited) {
-    bgColorClass = "bg-amber-100 border-amber-500 text-amber-700"
+    bgColorClass = "bg-white border-amber-400 text-amber-600 shadow-md"
   }
 
   const iconSvg = org.type === "Hospital" 
@@ -79,13 +96,13 @@ const createCustomIcon = (org: Organization, isSelected: boolean) => {
 
   const html = `
     <div class="relative flex flex-col items-center justify-center transition-all duration-300 ${isSelected ? 'scale-110 z-30' : 'hover:scale-105 z-20'}">
-      <div class="mb-1 px-2.5 py-1 rounded-md text-xs font-semibold shadow-md border whitespace-nowrap transition-all duration-200 ${isSelected ? 'bg-primary text-primary-foreground border-primary opacity-100' : 'bg-background text-foreground border-border'}">
+      <div class="mb-1 px-3 py-1 rounded-full text-xs font-bold shadow-md border whitespace-nowrap transition-all duration-200 ${isSelected ? 'bg-primary text-white border-primary opacity-100' : 'bg-white text-slate-800 border-slate-200 shadow-sm'}">
         ${org.name}
       </div>
-      <div class="w-9 h-9 rounded-full flex items-center justify-center shadow-lg border-2 ${bgColorClass}">
+      <div class="w-10 h-10 rounded-full flex items-center justify-center shadow-lg border-2 ${bgColorClass}">
         ${iconSvg}
       </div>
-      <div class="w-2 h-2 rounded-sm rotate-45 -mt-1 border-r-2 border-b-2 shadow-sm ${bgColorClass.split(' ').slice(0, 2).join(' ')}" />
+      <div class="w-2.5 h-2.5 rounded-xs rotate-45 -mt-1 border-r-2 border-b-2 shadow-sm ${bgColorClass.split(' ').slice(0, 2).join(' ')}" />
     </div>
   `
 

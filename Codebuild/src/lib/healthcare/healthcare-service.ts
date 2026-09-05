@@ -36,11 +36,11 @@ export const healthcareService = {
           type: org.type || "Hospital",
           address: org.address,
           city: org.city,
-          latitude: org.location?.lat || 23.0225,
-          longitude: org.location?.lng || 72.5714,
-          distance: typeof org.distanceNumber === "number" ? org.distanceNumber : 2.5,
-          rating: org.rating || 4.8,
-          reviewCount: org.reviewCount || 10,
+          latitude: typeof org.location?.lat === "number" ? org.location.lat : (typeof org.latitude === "number" ? org.latitude : 23.0225),
+          longitude: typeof org.location?.lng === "number" ? org.location.lng : (typeof org.longitude === "number" ? org.longitude : 72.5714),
+          distance: typeof org.distanceNumber === "number" ? org.distanceNumber : (typeof org.distance === "number" ? org.distance : 2.5),
+          rating: org.rating || 4.9,
+          reviewCount: org.reviewCount || 0,
           specializations: org.specializations || ["General Medicine"],
           doctorIds: org.doctorIds || [],
           availability: {
@@ -50,9 +50,9 @@ export const healthcareService = {
           },
           onlineConsultation: org.telemedicineEnabled !== false,
           workingHours: {
-            "Monday - Saturday": `${org.workingHours?.open || "09:00 AM"} - ${org.workingHours?.close || "08:00 PM"}`
+            "Monday - Saturday": `${org.workingHours?.open || "08:00 AM"} - ${org.workingHours?.close || "08:00 PM"}`
           },
-          contact: org.contact?.phone || "+91 79 2630 1100",
+          contact: typeof org.contact === "object" ? (org.contact?.phone || "+91 79 2630 1100") : (org.contact || "+91 79 2630 1100"),
           image: org.imageUrl
         }))
 
